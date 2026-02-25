@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Primary Palette */
+  --color-primary: #789A99;
+  --color-primary-dark: #5b7a79;
+  --color-primary-light: #a5c7c6;
+  --color-secondary: #FFD2C2;
+  --color-secondary-hover: #FFC5B0;
+  --color-secondary-soft: #FFF0E8;
+  --color-secondary-text: #5A3A31;
+
+  /* Backgrounds */
+  --color-aqua-tint: #F0F7F7;
+  --color-aqua-light: #E3ECEC;
+  --color-background-light: #F9FAFB;
+  --color-surface-light: #FFFFFF;
+  --color-sidebar-bg: #F8FAFC;
+  --color-active-bg: #EFF6F6;
+
+  /* Text */
+  --color-text-main: #1E293B;
+  --color-text-sub: #64748B;
+  --color-text-light: #94A3B8;
+  --color-text-heading: #334155;
+
+  /* Borders */
+  --color-border-subtle: #F1F5F9;
+  --color-border-default: #E2E8F0;
+  --color-border-light: #E5E7EB;
+
+  /* Status Colors */
+  --color-red-soft: #FEF2F2;
+  --color-red-text: #EF4444;
+  --color-blue-soft: #EFF6FF;
+  --color-blue-text: #3B82F6;
+  --color-green-soft: #F0FDF4;
+  --color-green-text: #22C55E;
+  --color-purple-soft: #F5F3FF;
+  --color-purple-text: #8B5CF6;
+  --color-orange-soft: #FFF7ED;
+  --color-orange-text: #F97316;
+  --color-teal-soft: #F0FDFA;
+  --color-teal-text: #14B8A6;
+
+  /* Card Shadows */
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 0 0 1px rgba(120, 154, 153, 0.2), 0 8px 16px -4px rgba(120, 154, 153, 0.1);
+  --shadow-float: 0 10px 30px -10px rgba(255, 210, 194, 0.5);
+
+  /* Fonts */
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+@layer base {
+  body {
+    @apply bg-background-light text-text-main font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar Styles */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 20px;
+  }
+
+  /* Grid Pattern Background */
+  .bg-grid-pattern {
+    background-image: radial-gradient(rgba(120, 154, 153, 0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Blob Animation */
+  @keyframes blob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+  }
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
