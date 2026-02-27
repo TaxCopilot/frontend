@@ -1,7 +1,6 @@
 "use client";
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
@@ -12,23 +11,38 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  User,
+  LogOut,
+  Trash2,
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const navItems = [
     { name: 'Workspace', href: '/workspace', icon: LayoutGrid },
     { name: 'Cases', href: '/workspace/intake', icon: FolderOpen },
     { name: 'Law Library', href: '/workspace/library', icon: Library },
     { name: 'Reports', href: '/workspace/reports', icon: BarChart2 },
+    { name: 'Trash', href: '/workspace/trash', icon: Trash2 },
   ];
 
   const isActive = (href: string) => {
     if (href === '/workspace') return pathname === '/workspace';
     return pathname.startsWith(href);
   };
+
+  const avatarUrl = user?.avatarUrl
+    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.avatarUrl}`)
+    : null;
+
+  const initials = user?.name
+    ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    : 'U';
 
   return (
     <aside
@@ -105,24 +119,38 @@ export function Sidebar() {
         </Link>
 
         {/* User Profile */}
-        <div className="border-t border-border-default pt-4 mt-2 flex items-center gap-3 px-2">
-          <Image
-            src="https://picsum.photos/seed/user/100/100"
-            alt="User Profile"
-            width={36}
-            height={36}
-            referrerPolicy="no-referrer"
-            className="w-9 h-9 rounded-full object-cover border border-surface-light shadow-sm flex-shrink-0"
-          />
+        <div className="border-t border-border-default pt-4 mt-2">
+          <Link href="/workspace/settings" className="flex items-center gap-3 px-2 group cursor-pointer">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={user?.name || 'User'}
+                className="w-9 h-9 rounded-full object-cover border border-surface-light shadow-sm flex-shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-surface-light shadow-sm">
+                {initials}
+              </div>
+            )}
+            {!collapsed && (
+              <div className="overflow-hidden flex-1">
+                <p className="text-sm font-medium text-text-heading truncate group-hover:text-primary transition-colors">
+                  {user?.name || 'User'}
+                </p>
+                <p className="text-xs text-text-light truncate">
+                  {user?.email || ''}
+                </p>
+              </div>
+            )}
+          </Link>
           {!collapsed && (
-            <div className="overflow-hidden">
-              <p className="text-sm font-medium text-text-heading truncate">
-                Arjun Mehta
-              </p>
-              <p className="text-xs text-text-light truncate">
-                Chartered Accountant
-              </p>
-            </div>
+            <button
+              onClick={() => { logout(); window.location.href = '/login'; }}
+              className="flex items-center gap-3 px-3 py-2 mt-2 rounded-lg text-text-light hover:text-red-500 hover:bg-red-50 transition-all w-full text-left text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           )}
         </div>
       </div>

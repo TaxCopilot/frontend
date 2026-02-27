@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Shield, Bot, FileText, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Shield, Bot, FileText, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function LoginPage() {
-  const { login, googleLogin } = useAuth();
+export default function RegisterPage() {
+  const { register, googleLogin } = useAuth();
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,13 +20,23 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(email, password);
+      await register(email, name, password);
       router.push('/workspace');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      setError(axiosErr.response?.data?.error || 'Invalid email or password');
+      setError(axiosErr.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -32,16 +44,13 @@ export default function LoginPage() {
 
   return (
     <div className="bg-background-light font-sans text-text-main min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Pattern */}
+      {/* Background */}
       <div className="absolute inset-0 z-0 bg-grid-pattern opacity-60 pointer-events-none" />
-
-      {/* Animated Blobs */}
       <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
         <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] bg-secondary rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
       </div>
 
-      {/* Main Content */}
       <main className="w-full max-w-md mx-auto p-6 relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -49,21 +58,20 @@ export default function LoginPage() {
             <FileText className="w-8 h-8" />
           </div>
           <h1 className="font-serif text-3xl font-bold text-text-heading tracking-tight">TaxCopilot</h1>
-          <p className="mt-2 text-sm text-text-sub">AI-Powered Legal & Tax Intelligence</p>
+          <p className="mt-2 text-sm text-text-sub">Create your account to get started</p>
         </div>
 
-        {/* Login Card */}
+        {/* Register Card */}
         <div className="bg-surface-light rounded-2xl shadow-xl border border-border-subtle p-8 backdrop-blur-sm relative overflow-hidden">
-          {/* Top accent line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
 
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-text-heading">Welcome Back</h2>
-              <p className="text-sm text-text-sub mt-1">Please enter your details to sign in.</p>
+              <h2 className="text-xl font-semibold text-text-heading">Create Account</h2>
+              <p className="text-sm text-text-sub mt-1">Fill in your details to register.</p>
             </div>
 
-            {/* Google Sign In */}
+            {/* Google Sign Up */}
             <button
               onClick={googleLogin}
               className="w-full flex items-center justify-center gap-3 bg-surface-light border border-border-default text-text-heading hover:bg-background-light font-medium py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow group"
@@ -94,9 +102,21 @@ export default function LoginPage() {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-heading mb-1 ml-1" htmlFor="email">
-                  Email Address
-                </label>
+                <label className="block text-sm font-medium text-text-heading mb-1 ml-1" htmlFor="name">Full Name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="w-4 h-4 text-text-light" />
+                  </div>
+                  <input
+                    className="block w-full pl-10 pr-3 py-2.5 border border-border-default rounded-xl leading-5 bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all"
+                    id="name" name="name" placeholder="John Doe" type="text" required
+                    value={name} onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1 ml-1" htmlFor="email">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="w-4 h-4 text-text-light" />
@@ -110,21 +130,14 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1 ml-1">
-                  <label className="block text-sm font-medium text-text-heading" htmlFor="password">
-                    Password
-                  </label>
-                  <Link className="text-xs font-medium text-primary hover:text-primary-dark" href="#">
-                    Forgot Password?
-                  </Link>
-                </div>
+                <label className="block text-sm font-medium text-text-heading mb-1 ml-1" htmlFor="password">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="w-4 h-4 text-text-light" />
                   </div>
                   <input
                     className="block w-full pl-10 pr-10 py-2.5 border border-border-default rounded-xl leading-5 bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all"
-                    id="password" name="password" placeholder="••••••••" type={showPassword ? 'text' : 'password'} required
+                    id="password" name="password" placeholder="Min. 6 characters" type={showPassword ? 'text' : 'password'} required minLength={6}
                     value={password} onChange={(e) => setPassword(e.target.value)}
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-light hover:text-text-sub transition-colors">
@@ -133,11 +146,18 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center ml-1">
-                <input className="h-4 w-4 text-primary focus:ring-primary border-border-default rounded cursor-pointer" id="remember-me" name="remember-me" type="checkbox" />
-                <label className="ml-2 block text-sm text-text-sub cursor-pointer" htmlFor="remember-me">
-                  Remember me for 30 days
-                </label>
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1 ml-1" htmlFor="confirmPassword">Confirm Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="w-4 h-4 text-text-light" />
+                  </div>
+                  <input
+                    className="block w-full pl-10 pr-3 py-2.5 border border-border-default rounded-xl leading-5 bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all"
+                    id="confirmPassword" name="confirmPassword" placeholder="Re-enter password" type={showPassword ? 'text' : 'password'} required
+                    value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
               </div>
 
               <button
@@ -145,17 +165,17 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-secondary-text bg-secondary hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all duration-200 transform hover:-translate-y-0.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? 'Creating Account...' : 'Create Account'}
               </button>
             </form>
           </div>
 
-          {/* Sign Up Link */}
+          {/* Sign In Link */}
           <div className="mt-8 text-center">
             <p className="text-sm text-text-sub">
-              New to TaxCopilot?{' '}
-              <Link className="font-semibold text-primary hover:text-primary-dark transition-colors ml-1" href="/register">
-                Create an account
+              Already have an account?{' '}
+              <Link className="font-semibold text-primary hover:text-primary-dark transition-colors ml-1" href="/login">
+                Sign in
               </Link>
             </p>
           </div>
@@ -184,7 +204,6 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="absolute bottom-4 w-full text-center">
         <p className="text-xs text-text-light">© 2024 TaxCopilot AI. All rights reserved.</p>
       </footer>
