@@ -6,8 +6,8 @@ import { useState } from 'react';
 import {
   LayoutGrid,
   FolderOpen,
-  Library,
-  BarChart2,
+  FileText,
+  BookOpen,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -25,9 +25,9 @@ export function Sidebar() {
 
   const navItems = [
     { name: 'Workspace', href: '/workspace', icon: LayoutGrid },
-    { name: 'Cases', href: '/workspace/intake', icon: FolderOpen },
-    { name: 'Law Library', href: '/workspace/library', icon: Library },
-    { name: 'Reports', href: '/workspace/reports', icon: BarChart2 },
+    { name: 'Upload', href: '/workspace/intake', icon: FolderOpen },
+    { name: 'Documents', href: '/workspace/documents', icon: FileText },
+    { name: 'Law Library', href: '/workspace/library', icon: BookOpen },
     { name: 'Trash', href: '/workspace/trash', icon: Trash2 },
   ];
 
