@@ -93,7 +93,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const response = await api.post('/api/ai/api/v1/decode-notice', {
+      const response = await api.post('/api/ai/v1/decode-notice', {
         document_id: document.id,
         notice_type: 'auto-detect',
         s3_bucket: document.s3Bucket,
