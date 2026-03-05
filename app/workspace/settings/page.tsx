@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Header } from '@/components/Header';
+import { env } from '@/lib/env';
 import { useAuthStore } from '@/stores/authStore';
 import { authService } from '@/services/authService';
 import { Camera, Save, User, Mail, Phone, FileText, Shield, Loader2, Check } from 'lucide-react';
@@ -20,7 +21,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const avatarUrl = user?.avatarUrl
-    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.avatarUrl}`)
+    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${env.apiUrl}${user.avatarUrl}`)
     : null;
 
   const initials = user?.name

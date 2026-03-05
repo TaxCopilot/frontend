@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { env } from '@/lib/env';
 import { useState } from 'react';
 import {
   LayoutGrid,
@@ -37,7 +38,7 @@ export function Sidebar() {
   };
 
   const avatarUrl = user?.avatarUrl
-    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.avatarUrl}`)
+    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${env.apiUrl}${user.avatarUrl}`)
     : null;
 
   const initials = user?.name

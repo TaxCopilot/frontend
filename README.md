@@ -1,20 +1,59 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# TaxCopilot Frontend
 
-# Run and deploy your AI Studio app
+Next.js frontend for TaxCopilot AI — an AI-powered tax compliance assistant for Indian businesses and Chartered Accountants.
 
-This contains everything you need to run your app locally.
+## Overview
 
-View your app in AI Studio: https://ai.studio/apps/707a0d04-ab12-4f9b-b6da-238fee598ffc
+TaxCopilot helps CAs respond to tax notices efficiently by analyzing government tax notices, providing legal research, and generating compliant response drafts. This frontend provides the document upload flow, workspace management, drafting studio, and law library interface.
 
-## Run Locally
+See [requirements.md](../requirements.md) and [design.md](../design.md) for full product specs.
 
-**Prerequisites:**  Node.js
+## Prerequisites
 
+- Node.js 20+
+- Running backend and gateway services (or use Docker Compose)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Setup
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env and set NEXT_PUBLIC_API_URL (default: http://localhost:8000)
+   ```
+
+3. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+## Scripts
+
+| Command   | Description                    |
+| --------- | ------------------------------ |
+| `npm run dev`  | Start dev server (port 3000)   |
+| `npm run build`| Production build               |
+| `npm run start`| Start production server        |
+| `npm run lint` | Run ESLint                     |
+
+## Environment Variables
+
+| Variable               | Description                    | Default              |
+| ---------------------- | ------------------------------ | -------------------- |
+| `NEXT_PUBLIC_API_URL`  | API gateway base URL           | `http://localhost:8000` |
+
+## Docker
+
+The frontend can run via Docker Compose from the project root:
+
+```bash
+docker-compose up --build
+```
+
+Frontend is served at http://localhost:3000.
