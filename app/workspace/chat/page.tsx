@@ -8,15 +8,16 @@ import { documentService, AnalysisFile } from '@/services/documentService';
 import api from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 
-interface AnalysisResult {
-  document_id: string;
-  notice_type: string;
-  summary: string;
-  key_issues: string[];
-  recommended_actions: string[];
-  draft_reply: string;
-  legal_references: string[];
-  sources: string[];
+/** AI decode mode response: draft_reply, citations, is_grounded */
+interface NoticeResponse {
+  draft_reply?: string;
+  citations?: string[];
+  is_grounded?: boolean;
+  summary?: string;
+  key_issues?: string[];
+  recommended_actions?: string[];
+  legal_references?: string[];
+  sources?: string[];
 }
 
 interface ChatMessage {
@@ -25,7 +26,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   isAnalysis?: boolean;
-  analysisResult?: AnalysisResult;
+  analysisResult?: NoticeResponse;
 }
 
 export default function ChatPage() {
@@ -37,6 +38,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -93,7 +95,8 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const response = await api.post('/api/ai/v1/decode-notice', {
+      const response = await api.post('/api/ai/v1/ask', {
+        mode: 'decode',
         document_id: document.id,
         notice_type: 'auto-detect',
         s3_bucket: document.s3Bucket,
@@ -151,49 +154,77 @@ export default function ChatPage() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
+    setChatLoading(true);
+    setError(null);
 
-    // For now, provide a helpful response about running analysis
-    setTimeout(() => {
+    try {
+      const response = await api.post('/api/ai/v1/ask', {
+        mode: 'chat',
+        message: text,
+      });
+
+      const result = response.data;
+      const answer = result.answer ?? '';
+      const citations = result.citations ?? [];
+      const content = citations.length > 0
+        ? `${answer}\n\n**References:**\n${citations.map((c: string) => `• ${c}`).join('\n')}`
+        : answer;
+
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: document
-          ? `I understand your query: "${text}". To get a comprehensive AI analysis of your document, please click the **"Run Analysis"** button above. The analysis will use AWS Textract for OCR and Bedrock Claude for legal analysis.`
-          : `Please upload a document first from the [Intake page](/workspace/intake) to start analysis.`,
+        content: content || 'I could not generate a response. Please try again.',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMsg]);
-    }, 500);
+    } catch (err: any) {
+      console.error('Chat failed:', err);
+      const errorDetail = err.response?.data?.detail;
+      let errorMessage = 'Chat failed. ';
+
+      if (typeof errorDetail === 'object' && errorDetail?.stage) {
+        errorMessage += `Stage: ${errorDetail.stage}. ${errorDetail.error || ''}`;
+      } else if (typeof errorDetail === 'string') {
+        errorMessage += errorDetail;
+      } else {
+        errorMessage += 'Please check that the AI service is running and try again.';
+      }
+
+      const errMsg: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `⚠️ ${errorMessage}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   const formatAnalysisResponse = (result: any): string => {
+    // AI service NoticeResponse: { draft_reply, citations, is_grounded }
     let content = '';
-
-    if (result.summary) {
-      content += `**Summary:**\n${result.summary}\n\n`;
-    }
-
-    if (result.key_issues?.length) {
-      content += `**Key Issues:**\n${result.key_issues.map((i: string) => `• ${i}`).join('\n')}\n\n`;
-    }
-
-    if (result.recommended_actions?.length) {
-      content += `**Recommended Actions:**\n${result.recommended_actions.map((a: string) => `• ${a}`).join('\n')}\n\n`;
-    }
-
-    if (result.legal_references?.length) {
-      content += `**Legal References:**\n${result.legal_references.map((r: string) => `• ${r}`).join('\n')}\n\n`;
-    }
 
     if (result.draft_reply) {
       content += `**Draft Reply:**\n${result.draft_reply}\n\n`;
     }
 
-    if (result.sources?.length) {
-      content += `**Sources:**\n${result.sources.map((s: string) => `• ${s}`).join('\n')}`;
+    if (result.citations?.length) {
+      content += `**Legal References:**\n${result.citations.map((c: string) => `• ${c}`).join('\n')}\n\n`;
     }
 
-    // If the response has a different structure, show the full response
+    if (result.is_grounded !== undefined) {
+      content += `**Grounded in law:** ${result.is_grounded ? 'Yes' : 'No'}`;
+    }
+
+    // Legacy / extended fields if present
+    if (result.summary) content += `\n\n**Summary:**\n${result.summary}`;
+    if (result.key_issues?.length) content += `\n\n**Key Issues:**\n${result.key_issues.map((i: string) => `• ${i}`).join('\n')}`;
+    if (result.recommended_actions?.length) content += `\n\n**Recommended Actions:**\n${result.recommended_actions.map((a: string) => `• ${a}`).join('\n')}`;
+    if (result.legal_references?.length && !result.citations?.length) content += `\n\n**Legal References:**\n${result.legal_references.map((r: string) => `• ${r}`).join('\n')}`;
+    if (result.sources?.length && !result.citations?.length) content += `\n\n**Sources:**\n${result.sources.map((s: string) => `• ${s}`).join('\n')}`;
+
     if (!content.trim()) {
       content = JSON.stringify(result, null, 2);
     }
@@ -344,6 +375,29 @@ export default function ChatPage() {
                 </div>
               ))}
 
+              {/* Chat loading indicator */}
+              {chatLoading && (
+                <div className="flex gap-4 max-w-3xl">
+                  <div className="w-9 h-9 rounded-xl bg-primary text-surface-light flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-semibold text-sm text-text-heading">TaxCopilot AI</span>
+                      <span className="text-[11px] text-text-light italic">Thinking...</span>
+                    </div>
+                    <div className="bg-secondary-soft border border-secondary/20 rounded-2xl rounded-tl-none p-5 flex items-center gap-3">
+                      <div className="flex space-x-1.5">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                      <span className="text-sm text-text-sub italic">Searching legal knowledge base...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Analyzing indicator */}
               {analyzing && (
                 <div className="flex gap-4 max-w-3xl">
@@ -388,12 +442,12 @@ export default function ChatPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
                     placeholder="Type your instructions or provide context..."
                     className="flex-1 bg-transparent py-3 px-3 text-text-main placeholder-text-light text-sm focus:outline-none"
-                    disabled={analyzing}
+                    disabled={analyzing || chatLoading}
                   />
                   <div className="flex gap-1 pr-3">
                     <button
                       onClick={handleSendMessage}
-                      disabled={!inputValue.trim() || analyzing}
+                      disabled={!inputValue.trim() || analyzing || chatLoading}
                       className="p-2.5 bg-primary text-surface-light rounded-xl hover:bg-primary-dark transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="w-4 h-4" />
