@@ -31,13 +31,19 @@ export default function WorkspacePage() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   // Step 2 form state
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null); // null = blank
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftAuthor, setDraftAuthor] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
   const [modalStep, setModalStep] = useState<1 | 2>(1);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUploading, setPdfUploading] = useState(false);
+  // View / Filter / Sort
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'az'>('latest');
 
   // Draft Context Menu State
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
@@ -174,126 +180,186 @@ export default function WorkspacePage() {
             My Drafts
             <span className="text-xs bg-background-light text-text-light border border-border-subtle px-2 py-0.5 rounded-full font-normal">{drafts.length}</span>
           </h3>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            {/* Grid / List toggle */}
             <div className="flex bg-background-light rounded-lg p-1 border border-border-subtle">
-              <button className="p-1.5 px-2.5 text-primary bg-surface-light rounded shadow-sm">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 px-2.5 rounded transition-colors ${viewMode === 'grid' ? 'text-primary bg-surface-light shadow-sm' : 'text-text-light hover:text-text-sub'
+                  }`}
+              >
                 <LayoutGrid className="w-[18px] h-[18px]" />
               </button>
-              <button className="p-1.5 px-2.5 text-text-light hover:text-text-sub transition-colors">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 px-2.5 rounded transition-colors ${viewMode === 'list' ? 'text-primary bg-surface-light shadow-sm' : 'text-text-light hover:text-text-sub'
+                  }`}
+              >
                 <List className="w-[18px] h-[18px]" />
               </button>
             </div>
-            <button className="flex items-center gap-2 text-sm font-medium text-text-sub hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-transparent hover:border-border-subtle hover:bg-background-light">
-              <Filter className="w-[18px] h-[18px]" />
-              Filter
-            </button>
-            <button className="flex items-center gap-2 text-sm font-medium text-text-sub hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-transparent hover:border-border-subtle hover:bg-background-light">
-              <ArrowUpDown className="w-[18px] h-[18px]" />
-              Sort by
-            </button>
+
+            {/* Filter */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
+                className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${activeFilter ? 'text-primary border-primary/30 bg-primary/5' : 'text-text-sub border-transparent hover:border-border-subtle hover:bg-background-light'
+                  }`}
+              >
+                <Filter className="w-[18px] h-[18px]" />
+                Filter{activeFilter ? `: ${activeFilter.replace('_', ' ')}` : ''}
+              </button>
+              {showFilterMenu && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-30">
+                  {[null, 'GENERAL', 'SCN_REPLY', 'APPEAL_MEMORANDUM', 'LEGAL_OPINION'].map((cat) => (
+                    <button
+                      key={cat ?? 'all'}
+                      onClick={() => { setActiveFilter(cat); setShowFilterMenu(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeFilter === cat ? 'text-primary bg-primary/5 font-medium' : 'text-text-sub hover:bg-background-light'
+                        }`}
+                    >
+                      {cat === null ? 'All Categories' : cat.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sort by */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
+                className="flex items-center gap-2 text-sm font-medium text-text-sub hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-transparent hover:border-border-subtle hover:bg-background-light"
+              >
+                <ArrowUpDown className="w-[18px] h-[18px]" />
+                {sortBy === 'latest' ? 'Latest' : sortBy === 'oldest' ? 'Oldest' : 'A–Z'}
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 w-36 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-30">
+                  {([['latest', 'Latest'], ['oldest', 'Oldest'], ['az', 'A–Z']] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      onClick={() => { setSortBy(val); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortBy === val ? 'text-primary bg-primary/5 font-medium' : 'text-text-sub hover:bg-background-light'
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* File Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {/* New Draft Card */}
-          <button onClick={() => setShowTemplateModal(true)} className="group border border-dashed border-border-default rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all h-56">
-            <div className="w-12 h-12 rounded-full bg-background-light group-hover:bg-surface-light flex items-center justify-center transition-colors shadow-sm">
-              <Plus className="w-6 h-6 text-text-light group-hover:text-primary" />
-            </div>
-            <span className="text-sm font-medium text-text-sub group-hover:text-primary transition-colors">New Draft</span>
-          </button>
+        {/* File Grid / List */}
+        {(() => {
+          const filtered = drafts
+            .filter(d => activeFilter ? d.category === activeFilter : true)
+            .sort((a, b) => {
+              if (sortBy === 'latest') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+              if (sortBy === 'oldest') return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+              return a.title.localeCompare(b.title);
+            });
+          return (
+            <div className={viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+              : 'flex flex-col gap-2'
+            }>
+              {/* New Draft Card — grid mode only */}
+              {viewMode === 'grid' ? (
+                <button onClick={() => setShowTemplateModal(true)} className="group border border-dashed border-border-default rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all h-56">
+                  <div className="w-12 h-12 rounded-full bg-background-light group-hover:bg-surface-light flex items-center justify-center transition-colors shadow-sm">
+                    <Plus className="w-6 h-6 text-text-light group-hover:text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-text-sub group-hover:text-primary transition-colors">New Draft</span>
+                </button>
+              ) : (
+                <button onClick={() => setShowTemplateModal(true)} className="group border border-dashed border-border-default rounded-xl flex items-center gap-3 px-4 py-3 hover:border-primary hover:bg-primary/5 transition-all w-full">
+                  <div className="w-9 h-9 rounded-lg border border-dashed border-border-default group-hover:border-primary flex items-center justify-center flex-shrink-0 transition-colors">
+                    <Plus className="w-4 h-4 text-text-light group-hover:text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-text-sub group-hover:text-primary transition-colors">New Draft</span>
+                </button>
+              )}
 
-          {/* Draft Cards from API */}
-          {isLoading ? (
-            <div className="col-span-3 flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : drafts.length === 0 ? (
-            <div className="col-span-3 flex flex-col items-center justify-center py-12 text-text-sub">
-              <FileText className="w-10 h-10 mb-3 text-text-light" />
-              <p className="text-sm">No drafts yet. Create your first draft to get started.</p>
-            </div>
-          ) : (
-            drafts.map((draft) => (
-              <div key={draft.id} className="relative bg-surface-light rounded-xl shadow-card hover:shadow-card-hover transition-all group h-56 flex flex-col border border-transparent hover:border-primary/20">
-                
-                {/* Background Link */}
-                <Link 
-                  href={`/workspace/editor?id=${draft.id}`} 
-                  className="absolute inset-0 z-0 rounded-xl"
-                  title="Open draft"
-                >
-                  <span className="sr-only">Open draft</span>
-                </Link>
-                
-                {/* Three-Dot Menu (Higher z-index) */}
-                <div className="absolute top-4 right-4 z-20">
-                  <div className={`transition-opacity ${dropdownOpenId === draft.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Delay state update slightly to prevent document listener from immediately closing it
-                        setTimeout(() => {
-                           setDropdownOpenId(dropdownOpenId === draft.id ? null : draft.id);
-                        }, 0);
-                      }}
-                      className="text-text-light hover:text-text-sub p-1.5 rounded-lg bg-background-light hover:bg-border-subtle/50 transition-colors shadow-sm relative z-50"
-                    >
-                      <MoreVertical className="w-5 h-5 pointer-events-none" />
-                    </button>
-                    
-                    {dropdownOpenId === draft.id && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-[100]">
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setEditingDraft(draft);
-                            setEditTitle(draft.title);
-                            setEditCategory(draft.category);
-                            setShowEditModal(true);
-                            setDropdownOpenId(null);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-text-sub hover:bg-background-light hover:text-primary flex items-center gap-2"
-                        >
-                          <Edit2 className="w-4 h-4 pointer-events-none" /> Edit Details
+              {/* Draft Cards */}
+              {isLoading ? (
+                <div className="col-span-4 flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="col-span-4 flex flex-col items-center justify-center py-12 text-text-sub">
+                  <FileText className="w-10 h-10 mb-3 text-text-light" />
+                  <p className="text-sm">{activeFilter ? 'No drafts match this filter.' : 'No drafts yet. Create your first draft to get started.'}</p>
+                </div>
+              ) : viewMode === 'grid' ? (
+                filtered.map((draft) => (
+                  <div key={draft.id} className="relative bg-surface-light rounded-xl shadow-card hover:shadow-card-hover transition-all group h-56 flex flex-col border border-transparent hover:border-primary/20">
+                    <Link href={`/workspace/editor?id=${draft.id}`} className="absolute inset-0 z-0 rounded-xl" title="Open draft"><span className="sr-only">Open draft</span></Link>
+                    <div className="absolute top-4 right-4 z-20">
+                      <div className={`transition-opacity ${dropdownOpenId === draft.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTimeout(() => setDropdownOpenId(dropdownOpenId === draft.id ? null : draft.id), 0); }} className="text-text-light hover:text-text-sub p-1.5 rounded-lg bg-background-light hover:bg-border-subtle/50 transition-colors shadow-sm">
+                          <MoreVertical className="w-5 h-5 pointer-events-none" />
                         </button>
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleTrash(draft.id);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4 pointer-events-none" /> Move to Trash
-                        </button>
+                        {dropdownOpenId === draft.id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-[100]">
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingDraft(draft); setEditTitle(draft.title); setEditCategory(draft.category); setShowEditModal(true); setDropdownOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-sub hover:bg-background-light hover:text-primary flex items-center gap-2">
+                              <Edit2 className="w-4 h-4 pointer-events-none" /> Edit Details
+                            </button>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTrash(draft.id); }} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
+                              <Trash2 className="w-4 h-4 pointer-events-none" /> Move to Trash
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card Content (Foreground) */}
-                <div className="relative z-10 p-5 flex-1 flex flex-col justify-between pointer-events-none">
-                  <div>
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${getCategoryColor(draft.category)}`}>
-                      <FileText className="w-5 h-5" />
                     </div>
-                    <h4 className="font-semibold text-text-heading text-base mb-1 line-clamp-2 leading-tight">{draft.title}</h4>
-                    <p className="text-xs text-text-light mt-1">{draft.case?.clientName || draft.category.replace('_', ' ')}</p>
+                    <div className="relative z-10 p-5 flex-1 flex flex-col justify-between pointer-events-none">
+                      <div>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${getCategoryColor(draft.category)}`}><FileText className="w-5 h-5" /></div>
+                        <h4 className="font-semibold text-text-heading text-base mb-1 line-clamp-2 leading-tight">{draft.title}</h4>
+                        <p className="text-xs text-text-light mt-1">{draft.case?.clientName || draft.category.replace('_', ' ')}</p>
+                      </div>
+                      <div className="border-t border-border-subtle pt-4 flex items-center justify-between">
+                        <span className="text-[11px] text-text-light font-medium uppercase tracking-wide">{timeAgo(draft.updatedAt)}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded border ${getStatusBadge(draft.status)}`}>{draft.status}</span>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="border-t border-border-subtle pt-4 flex items-center justify-between">
-                    <span className="text-[11px] text-text-light font-medium uppercase tracking-wide">{timeAgo(draft.updatedAt)}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded border ${getStatusBadge(draft.status)}`}>{draft.status}</span>
+                ))
+              ) : (
+                /* List view */
+                filtered.map((draft) => (
+                  <div key={draft.id} className="relative bg-surface-light rounded-xl border border-border-default hover:border-primary/30 hover:shadow-sm transition-all group flex items-center gap-4 px-4 py-3">
+                    <Link href={`/workspace/editor?id=${draft.id}`} className="absolute inset-0 z-0 rounded-xl" title="Open draft"><span className="sr-only">Open draft</span></Link>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${getCategoryColor(draft.category)}`}><FileText className="w-4 h-4" /></div>
+                    <div className="flex-1 min-w-0 relative z-10 pointer-events-none">
+                      <h4 className="font-medium text-text-heading text-sm truncate">{draft.title}</h4>
+                      <p className="text-[11px] text-text-light mt-0.5">{draft.category.replace('_', ' ')} · {timeAgo(draft.updatedAt)}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded border flex-shrink-0 relative z-10 pointer-events-none ${getStatusBadge(draft.status)}`}>{draft.status}</span>
+                    <div className="relative z-20 flex-shrink-0">
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTimeout(() => setDropdownOpenId(dropdownOpenId === draft.id ? null : draft.id), 0); }} className={`text-text-light hover:text-text-sub p-1.5 rounded-lg hover:bg-background-light transition-colors ${dropdownOpenId === draft.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <MoreVertical className="w-4 h-4 pointer-events-none" />
+                      </button>
+                      {dropdownOpenId === draft.id && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-[100]">
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingDraft(draft); setEditTitle(draft.title); setEditCategory(draft.category); setShowEditModal(true); setDropdownOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-sub hover:bg-background-light hover:text-primary flex items-center gap-2">
+                            <Edit2 className="w-4 h-4 pointer-events-none" /> Edit Details
+                          </button>
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTrash(draft.id); }} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
+                            <Trash2 className="w-4 h-4 pointer-events-none" /> Move to Trash
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                ))
+              )}
+            </div>
+
+          );
+        })()}
       </div>
 
       {/* Template Selection Modal */}
