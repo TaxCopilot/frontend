@@ -1,13 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sparkles, FileText, Scale, Bot, Upload, Brain, Pen, Check } from 'lucide-react';
-import { NavCTA } from '@/components/NavCTA';
-import { GetStartedLink } from '@/components/GetStartedLink';
-import { LandingWrapper } from '@/components/LandingWrapper';
+import { Sparkles, ArrowRight, ShieldCheck, FileText, Scale, Bot, Upload, Brain, Pen, Check } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-    <LandingWrapper>
     <div className="min-h-screen bg-surface-light font-sans selection:bg-primary/20">
       {/* Navigation */}
       <nav className="flex items-center justify-between px-8 py-5 max-w-7xl mx-auto">
@@ -24,12 +20,14 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-text-sub hover:text-primary transition-colors">Log in</Link>
-          <NavCTA />
+          <Link href="/login" className="bg-text-heading hover:bg-text-main text-surface-light px-5 py-2.5 rounded-full text-sm font-medium shadow-sm transition-all transform hover:-translate-y-0.5">
+            Get Started
+          </Link>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="landing-hero relative pt-20 pb-28 px-8 max-w-7xl mx-auto text-center overflow-hidden">
+      <section className="relative pt-20 pb-28 px-8 max-w-7xl mx-auto text-center overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-secondary/15 rounded-full blur-[100px] -z-10" />
         <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-primary/8 rounded-full blur-[80px] -z-10" />
 
@@ -47,7 +45,10 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <GetStartedLink variant="primary">Start Free Trial</GetStartedLink>
+          <Link href="/login" className="w-full sm:w-auto bg-secondary hover:bg-secondary-hover text-secondary-text px-8 py-4 rounded-full text-lg font-semibold shadow-float transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2">
+            Start Free Trial
+            <ArrowRight className="w-5 h-5" />
+          </Link>
           <Link href="#demo" className="w-full sm:w-auto bg-surface-light border border-border-default hover:bg-background-light text-text-sub px-8 py-4 rounded-full text-lg font-medium shadow-sm transition-all flex items-center justify-center gap-2">
             Book a Demo
           </Link>
@@ -73,9 +74,9 @@ export default function LandingPage() {
       </section>
 
       {/* Workflow Section */}
-      <section id="workflow" className="landing-workflow py-24 bg-background-light px-8">
+      <section id="workflow" className="py-24 bg-background-light px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 landing-heading">
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-serif text-text-heading mb-4">Three steps to the perfect draft</h2>
             <p className="text-text-sub max-w-2xl mx-auto">From document upload to finished legal response in minutes.</p>
           </div>
@@ -86,7 +87,7 @@ export default function LandingPage() {
               { num: '2', title: 'Analysis & Strategy', desc: 'Cross-reference legal databases, find precedents, and generate a strategic response framework based on case analysis.', icon: Brain, color: 'bg-secondary/20 text-secondary-text' },
               { num: '3', title: 'Drafting Studio', desc: 'Generate publication-ready legal responses with AI suggestions, citation checking, and multiple tone options.', icon: Pen, color: 'bg-purple-soft text-purple-text' },
             ].map((step) => (
-              <div key={step.num} className="landing-card bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-all group relative overflow-hidden">
+              <div key={step.num} className="bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-all group relative overflow-hidden">
                 <div className="absolute top-4 right-6 text-6xl font-serif font-bold text-background-light select-none">{step.num}</div>
                 <div className={`w-14 h-14 ${step.color} rounded-2xl flex items-center justify-center mb-6 relative z-10`}>
                   <step.icon className="w-7 h-7" />
@@ -100,15 +101,15 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="landing-features py-24 px-8">
+      <section id="features" className="py-24 px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 landing-heading">
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-serif text-text-heading mb-4">Everything you need to handle complex cases</h2>
             <p className="text-text-sub max-w-2xl mx-auto">TaxCopilot combines advanced AI with a comprehensive legal database to streamline your workflow.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="landing-feature-card bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
+            <div className="bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-14 h-14 bg-blue-soft text-blue-text rounded-2xl flex items-center justify-center mb-6">
                 <FileText className="w-7 h-7" />
               </div>
@@ -116,7 +117,7 @@ export default function LandingPage() {
               <p className="text-text-sub leading-relaxed">Upload SCNs, assessment orders, or client data. Our AI instantly extracts key facts, dates, and alleged violations.</p>
             </div>
 
-            <div className="landing-feature-card bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
+            <div className="bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6">
                 <Bot className="w-7 h-7" />
               </div>
@@ -124,7 +125,7 @@ export default function LandingPage() {
               <p className="text-text-sub leading-relaxed">Generate highly contextual replies, appeal memorandums, and legal opinions in seconds, tailored to your firm&apos;s style.</p>
             </div>
 
-            <div className="landing-feature-card bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
+            <div className="bg-surface-light p-8 rounded-3xl border border-border-subtle shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-14 h-14 bg-secondary-soft text-secondary-text rounded-2xl flex items-center justify-center mb-6">
                 <Scale className="w-7 h-7" />
               </div>
@@ -166,12 +167,9 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <GetStartedLink
-              variant="block"
-              className="block w-full text-center bg-secondary hover:bg-secondary-hover text-secondary-text px-6 py-3.5 rounded-xl font-semibold shadow-float transition-all transform hover:-translate-y-0.5"
-            >
+            <Link href="/login" className="block w-full text-center bg-secondary hover:bg-secondary-hover text-secondary-text px-6 py-3.5 rounded-xl font-semibold shadow-float transition-all transform hover:-translate-y-0.5">
               Start 14-Day Free Trial
-            </GetStartedLink>
+            </Link>
             <p className="text-center text-xs text-text-light mt-3">No credit card required</p>
           </div>
         </div>
@@ -196,6 +194,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-    </LandingWrapper>
   );
 }

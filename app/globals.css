@@ -74,6 +74,22 @@
     border-radius: 20px;
   }
 
+  /* Hover-reveal scrollbar: hidden by default, visible on hover */
+  .hover-scrollbar::-webkit-scrollbar {
+    height: 3px;
+  }
+  .hover-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hover-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 20px;
+    transition: background-color 0.2s;
+  }
+  .hover-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+  }
+
   /* Grid Pattern Background */
   .bg-grid-pattern {
     background-image: radial-gradient(rgba(120, 154, 153, 0.15) 1px, transparent 1px);

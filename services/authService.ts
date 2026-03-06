@@ -1,5 +1,4 @@
 import api from './api';
-import { env } from '@/lib/env';
 
 export interface User {
   id: string;
@@ -30,7 +29,8 @@ export const authService = {
   },
 
   getGoogleAuthUrl(): string {
-    return `${env.apiUrl}/api/auth/google`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${baseUrl}/api/auth/google`;
   },
 
   async getMe(): Promise<{ user: User }> {
