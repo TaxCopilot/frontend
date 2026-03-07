@@ -17,7 +17,7 @@ export default function ChatPage() {
 
   // ── Data hooks ────────────────────────────────────────────────────────────
   const { document, loading: docLoading, error: docError } = useDocument(docId);
-  const { messages, analyzing, chatLoading, historyLoading, runAnalysis, sendMessage } = useChat({
+  const { messages, analyzing, chatLoading, historyLoading, runAnalysis, sendMessage, runDeepAnalysis, createStrategy, buildDraft } = useChat({
     document,
     docId,
   });
@@ -72,7 +72,7 @@ export default function ChatPage() {
 
           {/* Analysis Action Bar */}
           {document && !analyzing && (
-            <div className="px-6 lg:px-8 py-3 bg-surface-light border-b border-border-subtle flex items-center justify-between">
+            <div className="px-6 lg:px-8 py-3 bg-surface-light border-b border-border-subtle flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-red-soft text-red-text rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4" />
@@ -84,13 +84,40 @@ export default function ChatPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={runAnalysis}
-                className="inline-flex items-center gap-2 bg-primary text-surface-light px-5 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-primary-dark transition-all transform hover:-translate-y-0.5"
-              >
-                <Play className="w-4 h-4" />
-                Run Analysis
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={runAnalysis}
+                  title="Run initial OCR & extract key info"
+                  className="inline-flex items-center gap-2 bg-secondary-soft text-text-main border border-border-default px-4 py-2 rounded-xl font-semibold text-sm shadow-sm hover:bg-border-subtle transition-all transform hover:-translate-y-0.5"
+                >
+                  <Play className="w-4 h-4" />
+                  Base Decode
+                </button>
+                <button
+                  onClick={runDeepAnalysis}
+                  title="Detailed section and demand breakdown"
+                  className="inline-flex items-center gap-2 bg-primary text-surface-light px-4 py-2 rounded-xl font-semibold text-sm shadow-sm hover:bg-primary-dark transition-all transform hover:-translate-y-0.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Deep Analysis
+                </button>
+                <button
+                  onClick={() => createStrategy()}
+                  title="Generate a grounded defense strategy"
+                  className="inline-flex items-center gap-2 bg-secondary text-surface-light px-4 py-2 rounded-xl font-semibold text-sm shadow-sm hover:bg-secondary-dark transition-all transform hover:-translate-y-0.5"
+                >
+                  <Scale className="w-4 h-4" />
+                  Strategy
+                </button>
+                <button
+                  onClick={buildDraft}
+                  title="Draft an HTML response to the department"
+                  className="inline-flex items-center gap-2 bg-surface-dark text-surface-light px-4 py-2 rounded-xl font-semibold text-sm shadow-sm hover:bg-text-heading transition-all transform hover:-translate-y-0.5"
+                >
+                  <FileText className="w-4 h-4" />
+                  Draft Reply
+                </button>
+              </div>
             </div>
           )}
 

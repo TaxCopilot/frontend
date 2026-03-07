@@ -30,6 +30,9 @@ interface UseChatResult {
   error: string | null;
   runAnalysis: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
+  runDeepAnalysis: () => Promise<void>;
+  createStrategy: (accountDetails?: string) => Promise<void>;
+  buildDraft: () => Promise<void>;
 }
 
 function formatAnalysisResponse(result: NoticeResponse): string {
@@ -134,7 +137,7 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const result = await chatService.analyzeDocument({
+      const result = await chatService.decodeDocument({
         document_id: docId,
         notice_type: 'auto-detect',
         s3_bucket: document.s3Bucket,
@@ -225,5 +228,108 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     [docId]
   );
 
-  return { messages, analyzing, chatLoading, historyLoading, error, runAnalysis, sendMessage };
+  const runDeepAnalysis = useCallback(async () => {
+    if (!docId) return;
+    setAnalyzing(true);
+    setError(null);
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: 'Could you provide a deep structured analysis of this notice, including sections applied and immediate actions?',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    try {
+      const result = await chatService.analyzeNotice({
+        document_id: docId,
+        s3_bucket: document?.s3Bucket,
+        s3_key: document?.s3Key,
+      });
+      let content = `**Notice Summary:**\n${result.summary}\n\n`;
+      if (result.sections_applied?.length) content += `**Sections Applied:**\n${result.sections_applied.map(s => `• ${s}`).join('\n')}\n\n`;
+      if (result.demands?.length) content += `**Demands:**\n${result.demands.map(d => `• ${d.description}: ${d.amount}`).join('\n')}\n\n`;
+      if (result.deadline) content += `**Deadline:**\n• ${result.deadline}\n\n`;
+      if (result.immediate_actions?.length) content += `**Immediate Actions:**\n${result.immediate_actions.map(a => `• ${a}`).join('\n')}\n\n`;
+      if (result.citations?.length) content += `**Citations:**\n${result.citations.map(c => `• ${c}`).join('\n')}`;
+
+      const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'assistant', content: content.trim(), timestamp: new Date() };
+      setMessages((prev) => [...prev, aiMsg]);
+      await chatService.saveMessage(docId, 'user', userMsg.content, false);
+      await chatService.saveMessage(docId, 'assistant', content, true);
+    } catch (err: any) {
+      console.error(err);
+      setError(formatErrorDetail(err));
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [docId]);
+
+  const createStrategy = useCallback(async (accountDetails?: string) => {
+    if (!docId) return;
+    setAnalyzing(true);
+    setError(null);
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: accountDetails ? 'Please generate a defense strategy tailored to the provided account details.' : 'Please generate a general defense strategy for this notice.',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    try {
+      const result = await chatService.generateStrategy({
+        document_id: docId,
+        account_details: accountDetails,
+        s3_bucket: document?.s3Bucket,
+        s3_key: document?.s3Key,
+      });
+      let content = `**Defense Strategy Steps:**\n${result.strategy_steps.map(s => `• ${s}`).join('\n')}\n\n`;
+      if (result.suggested_reply_points?.length) content += `**Suggested Reply Points:**\n${result.suggested_reply_points.map(p => `• ${p}`).join('\n')}\n\n`;
+      content += `**Estimated Risk:**\n${result.estimated_risk}\n\n`;
+      if (result.disclaimer) content += `*Disclaimer: ${result.disclaimer}*`;
+
+      const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'assistant', content: content.trim(), timestamp: new Date() };
+      setMessages((prev) => [...prev, aiMsg]);
+      await chatService.saveMessage(docId, 'user', userMsg.content, false);
+      await chatService.saveMessage(docId, 'assistant', content, false);
+    } catch (err: any) {
+      console.error(err);
+      setError(formatErrorDetail(err));
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [docId]);
+
+  const buildDraft = useCallback(async () => {
+    if (!docId) return;
+    setAnalyzing(true);
+    setError(null);
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: 'Please prepare a formal HTML draft reply based on our discussion and the notice details.',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    try {
+      const result = await chatService.generateDraft({
+        document_id: docId,
+        s3_bucket: document?.s3Bucket,
+        s3_key: document?.s3Key,
+      });
+      let content = `${result.html_content}`;
+      if (result.citations?.length) content += `\n\n**Citations Used:**\n${result.citations.map(c => `• ${c}`).join('\n')}`;
+
+      const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'assistant', content: content.trim(), timestamp: new Date() };
+      setMessages((prev) => [...prev, aiMsg]);
+      await chatService.saveMessage(docId, 'user', userMsg.content, false);
+      await chatService.saveMessage(docId, 'assistant', content, false);
+    } catch (err: any) {
+      console.error(err);
+      setError(formatErrorDetail(err));
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [docId]);
+
+  return { messages, analyzing, chatLoading, historyLoading, error, runAnalysis, sendMessage, runDeepAnalysis, createStrategy, buildDraft };
 }
