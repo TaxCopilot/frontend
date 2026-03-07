@@ -32,10 +32,11 @@ export const documentService = {
     return data.data;
   },
 
-  /** Upload a file to S3 for AI analysis */
-  async uploadForAnalysis(file: File): Promise<AnalysisFile> {
+  /** Upload a file to S3 for AI analysis (optionally linked to a case) */
+  async uploadForAnalysis(file: File, caseId?: string): Promise<AnalysisFile> {
     const formData = new FormData();
     formData.append('file', file);
+    if (caseId) formData.append('caseId', caseId);
 
     const { data } = await api.post('/api/analysis-files/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

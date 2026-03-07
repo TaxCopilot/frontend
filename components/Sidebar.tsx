@@ -4,10 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import {
-  LayoutGrid,
   FolderOpen,
-  FileText,
-  BookOpen,
+  Library,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -28,10 +26,8 @@ export function Sidebar() {
   const logout = useAuthStore((s) => s.logout);
 
   const navItems = [
-    { name: 'Workspace', href: '/workspace', icon: LayoutGrid },
-    { name: 'Upload', href: '/workspace/intake', icon: FolderOpen },
-    { name: 'Documents', href: '/workspace/documents', icon: FileText },
-    { name: 'Law Library', href: '/workspace/library', icon: BookOpen },
+    { name: 'Cases', href: '/workspace', icon: FolderOpen },
+    { name: 'Library', href: '/workspace/library', icon: Library },
     { name: 'Trash', href: '/workspace/trash', icon: Trash2 },
   ];
 

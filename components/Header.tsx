@@ -22,14 +22,15 @@ export function Header({
       <div className="flex items-center gap-4">
         {/* Search */}
         {onSearch !== undefined && (
-          <div className="relative hidden md:block group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-light group-focus-within:text-primary transition-colors" />
+          <div className="relative flex items-center min-w-0 max-w-64 w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-light flex-shrink-0 pointer-events-none" />
             <input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue || ''}
               onChange={(e) => onSearch(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-background-light border border-border-default rounded-lg text-sm w-64 focus:ring-1 focus:ring-primary focus:bg-surface-light placeholder-text-light transition-all outline-none"
+              className="w-full min-w-0 pl-10 pr-4 py-2.5 bg-background-light border border-border-default rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-surface-light placeholder-text-light transition-all outline-none"
+              style={{ boxSizing: 'border-box' }}
             />
           </div>
         )}
