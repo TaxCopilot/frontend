@@ -27,7 +27,7 @@ function EditorPageInner() {
   const [chatMessages, setChatMessages] = useState<{ id: string; text: string; time: string }[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [panelWidth, setPanelWidth] = useState(320);
-  const [activeAiTab, setActiveAiTab] = useState<'chat' | 'modify'>('chat');
+  const [activeAiTab, setActiveAiTab] = useState<'chat' | 'analysis'>('chat');
 
   const sendMessage = () => {
     const text = chatInput.trim();
@@ -229,20 +229,29 @@ function EditorPageInner() {
             <h3 className="font-semibold text-text-heading text-[12.5px]">AI Writing Assistant</h3>
           </div>
 
-          {/* Two-tab bar */}
+          {/* Tabs: chat | analysis */}
           <div className="flex border-b border-border-subtle flex-shrink-0">
-            {(['chat', 'modify'] as const).map((tab) => (
+            {(['chat', 'analysis'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveAiTab(tab)}
-                className={`flex-1 py-2.5 text-[12px] font-medium transition-all border-b-2 ${activeAiTab === tab
+                className={`flex-1 py-2.5 text-[12px] font-medium transition-all border-b-2 capitalize ${activeAiTab === tab
                   ? 'border-primary text-primary'
                   : 'border-transparent text-text-light hover:text-text-sub'
                   }`}
               >
-                {tab === 'chat' ? 'AI Chat' : 'Modify Document'}
+                {tab}
               </button>
             ))}
+          </div>
+          {/* Fact check buttons */}
+          <div className="flex gap-2 p-3 border-b border-border-subtle flex-shrink-0">
+            <button className="flex-1 py-2 text-[11px] font-medium border border-border-default rounded-lg hover:bg-primary/5 text-text-sub hover:text-primary transition-colors">
+              Fact Check
+            </button>
+            <button className="flex-1 py-2 text-[11px] font-medium border border-border-default rounded-lg hover:bg-primary/5 text-text-sub hover:text-primary transition-colors">
+              Fact Check
+            </button>
           </div>
 
           {/* Tab content */}
@@ -295,8 +304,8 @@ function EditorPageInner() {
               </div>
             </>
           ) : (
-            /* ── MODIFY DOCUMENT ── */
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
+            /* ── ANALYSIS ── */
+            <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
               {/* Horizontal action tab bar */}
               <div className="border-b border-border-subtle">
                 <div className="flex overflow-x-auto hover-scrollbar">

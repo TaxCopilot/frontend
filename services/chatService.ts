@@ -13,6 +13,8 @@ export interface AnalyzeDocumentPayload {
 export interface ChatMessagePayload {
   message: string;
   document_id?: string;
+  s3_bucket?: string | null;
+  s3_key?: string | null;
 }
 
 export interface StrategyPayload {
@@ -141,6 +143,8 @@ export const chatService = {
       mode: 'chat',
       message: payload.message,
       document_id: payload.document_id,
+      s3_bucket: payload.s3_bucket ?? undefined,
+      s3_key: payload.s3_key ?? undefined,
     });
     return data;
   },

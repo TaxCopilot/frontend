@@ -242,8 +242,8 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     try {
       const result = await chatService.analyzeNotice({
         document_id: docId,
-        s3_bucket: document?.s3Bucket,
-        s3_key: document?.s3Key,
+        s3_bucket: document?.s3Bucket ?? undefined,
+        s3_key: document?.s3Key ?? undefined,
       });
       let content = `**Notice Summary:**\n${result.summary}\n\n`;
       if (result.sections_applied?.length) content += `**Sections Applied:**\n${result.sections_applied.map(s => `• ${s}`).join('\n')}\n\n`;
@@ -279,8 +279,8 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
       const result = await chatService.generateStrategy({
         document_id: docId,
         account_details: accountDetails,
-        s3_bucket: document?.s3Bucket,
-        s3_key: document?.s3Key,
+        s3_bucket: document?.s3Bucket ?? undefined,
+        s3_key: document?.s3Key ?? undefined,
       });
       let content = `**Defense Strategy Steps:**\n${result.strategy_steps.map(s => `• ${s}`).join('\n')}\n\n`;
       if (result.suggested_reply_points?.length) content += `**Suggested Reply Points:**\n${result.suggested_reply_points.map(p => `• ${p}`).join('\n')}\n\n`;
@@ -313,8 +313,8 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     try {
       const result = await chatService.generateDraft({
         document_id: docId,
-        s3_bucket: document?.s3Bucket,
-        s3_key: document?.s3Key,
+        s3_bucket: document?.s3Bucket ?? undefined,
+        s3_key: document?.s3Key ?? undefined,
       });
       let content = `${result.html_content}`;
       if (result.citations?.length) content += `\n\n**Citations Used:**\n${result.citations.map(c => `• ${c}`).join('\n')}`;
