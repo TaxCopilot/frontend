@@ -91,12 +91,17 @@ export default function ProfilePage() {
         <div className="flex flex-col h-full">
             <Header title="Profile" subtitle="Manage your personal information and account details." />
 
-            <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-28 pt-8 scrollbar-thin bg-background-light">
-                <div className="max-w-3xl mx-auto space-y-6">
+            <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-28 pt-10 scrollbar-thin bg-background-light relative">
+                {/* Decorative background glow */}
+                <div className="absolute left-0 top-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+                
+                <div className="max-w-3xl mx-auto space-y-8 relative z-10">
 
                     {/* ── Identity Card ── */}
-                    <div className="bg-surface-light border border-border-default rounded-2xl p-6">
-                        <div className="flex items-start justify-between flex-wrap gap-4">
+                    <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
+                        
+                        <div className="relative z-10 flex items-start justify-between flex-wrap gap-6">
                             <div className="flex items-center gap-5">
                                 {/* Avatar */}
                                 <div className="relative group flex-shrink-0">
@@ -145,16 +150,16 @@ export default function ProfilePage() {
                     </div>
 
                     {/* ── Professional Information ── */}
-                    <div className="bg-surface-light border border-border-default rounded-2xl p-6">
-                        <h3 className="text-sm font-semibold text-text-heading mb-5">Professional Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                    <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+                        <h3 className="text-lg font-serif font-semibold text-text-heading mb-6 relative z-10">Professional Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 relative z-10">
                             <Field label="Full Name" id="p-name">
                                 <input
                                     id="p-name"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    className="w-full px-4 py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
                                 />
                             </Field>
 
@@ -164,7 +169,7 @@ export default function ProfilePage() {
                                     type="email"
                                     value={user?.email || ''}
                                     disabled
-                                    className="w-full px-3.5 py-2.5 border border-border-default rounded-xl bg-background-light text-text-light text-sm cursor-not-allowed"
+                                    className="w-full px-4 py-3 border border-border-default rounded-xl bg-background-light text-text-light text-sm cursor-not-allowed shadow-sm"
                                 />
                                 <p className="text-[11px] text-text-light mt-1">Cannot be changed</p>
                             </Field>
@@ -178,7 +183,7 @@ export default function ProfilePage() {
                                         placeholder="+91 98765 43210"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
-                                        className="w-full pl-9 pr-3.5 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                        className="w-full pl-10 pr-4 py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
                                     />
                                 </div>
                             </Field>
@@ -186,33 +191,33 @@ export default function ProfilePage() {
                     </div>
 
                     {/* ── Account Info ── */}
-                    <div className="bg-surface-light border border-border-default rounded-2xl p-6">
-                        <h3 className="text-sm font-semibold text-text-heading mb-4">Account</h3>
-                        <div className="divide-y divide-border-subtle text-sm">
-                            <div className="flex items-center justify-between py-3">
-                                <span className="text-text-sub">Sign-in method</span>
+                    <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+                        <h3 className="text-lg font-serif font-semibold text-text-heading mb-6 relative z-10">Account Status</h3>
+                        <div className="space-y-2 relative z-10">
+                            <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
+                                <span className="text-sm font-medium text-text-sub">Sign-in method</span>
                                 <span className="text-text-heading font-medium">
                                     {user?.provider === 'GOOGLE' ? '🔗 Google OAuth' : '📧 Email & Password'}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between py-3">
-                                <span className="text-text-sub">Account role</span>
+                            <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
+                                <span className="text-sm font-medium text-text-sub">Account role</span>
                                 <span className="text-text-heading font-medium">{user?.role || 'USER'}</span>
                             </div>
-                            <div className="flex items-center justify-between py-3">
-                                <span className="text-text-sub">User ID</span>
+                            <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
+                                <span className="text-sm font-medium text-text-sub">User ID</span>
                                 <span className="text-xs font-mono text-text-light bg-background-light px-2 py-1 rounded-lg border border-border-subtle">{user?.id || '—'}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* ── Danger Zone ── */}
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-center justify-between gap-4">
-                        <div>
+                    <div className="bg-red-50/50 border border-red-200 rounded-3xl p-8 flex items-center justify-between gap-6 shadow-sm relative overflow-hidden">
+                        <div className="relative z-10">
                             <p className="text-sm font-semibold text-red-600 flex items-center gap-1.5"><Trash2 className="w-4 h-4" /> Delete Account</p>
                             <p className="text-xs text-red-400 mt-0.5">Permanently deletes your account, all drafts, and uploaded documents.</p>
                         </div>
-                        <button className="flex-shrink-0 px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-xl hover:bg-red-100 transition-colors">
+                        <button className="flex-shrink-0 px-6 py-2.5 text-sm font-bold text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 hover:border-red-400 transition-all shadow-sm relative z-10">
                             Delete
                         </button>
                     </div>
@@ -221,7 +226,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Sticky Save Bar ── */}
-            <div className="sticky bottom-0 bg-surface-light border-t border-border-default px-8 lg:px-12 py-4 flex items-center justify-end gap-3">
+            <div className="sticky bottom-0 bg-surface-light/80 backdrop-blur-md border-t border-border-subtle px-8 lg:px-12 py-5 flex items-center justify-end gap-4 z-20">
                 <button
                     onClick={() => { setName(user?.name || ''); setPhone(user?.phone || ''); }}
                     className="px-5 py-2.5 text-sm font-medium text-text-sub border border-border-default rounded-xl hover:bg-background-light transition-colors"

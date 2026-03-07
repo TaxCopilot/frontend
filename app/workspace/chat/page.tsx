@@ -2,241 +2,43 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
-import { Bot, Send, Sparkles, FileText, Scale, Loader2, AlertCircle, Play } from 'lucide-react';
+import { Bot, Send, Sparkles, FileText, Scale, Loader2, Play } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { documentService, AnalysisFile } from '@/services/documentService';
-import api from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
-
-/** AI decode mode response: draft_reply, citations, is_grounded */
-interface NoticeResponse {
-  draft_reply?: string;
-  citations?: string[];
-  is_grounded?: boolean;
-  summary?: string;
-  key_issues?: string[];
-  recommended_actions?: string[];
-  legal_references?: string[];
-  sources?: string[];
-}
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  isAnalysis?: boolean;
-  analysisResult?: NoticeResponse;
-}
+import { useDocument } from '@/hooks/useDocument';
+import { useChat } from '@/hooks/useChat';
 
 export default function ChatPage() {
   const searchParams = useSearchParams();
   const docId = searchParams.get('docId');
   const user = useAuthStore((s) => s.user);
-
-  const [document, setDocument] = useState<AnalysisFile | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Load document
-  useEffect(() => {
-    if (!docId) {
-      setLoading(false);
-      return;
-    }
-    loadDocument();
-  }, [docId]);
+  // ── Data hooks ────────────────────────────────────────────────────────────
+  const { document, loading: docLoading, error: docError } = useDocument(docId);
+  const { messages, analyzing, chatLoading, historyLoading, runAnalysis, sendMessage } = useChat({
+    document,
+    docId,
+  });
 
-  // Auto-scroll to bottom
+  // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadDocument = async () => {
-    try {
-      setLoading(true);
-      const doc = await documentService.getAnalysisFile(docId!);
-      setDocument(doc);
-
-      // Add welcome message
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'assistant',
-          content: `I've loaded your document **${doc.filename}**. Click "Run Analysis" to start the AI-powered analysis. I'll identify the notice type, extract key issues, find relevant legal references, and prepare a draft response.`,
-          timestamp: new Date(),
-        },
-      ]);
-    } catch (err: any) {
-      setError('Failed to load document. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const runAnalysis = async () => {
-    if (!document) return;
-    setAnalyzing(true);
-    setError(null);
-
-    // Add user message
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: `Please analyze the document "${document.filename}" and provide a comprehensive legal analysis.`,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    try {
-      const response = await api.post('/api/ai/v1/ask', {
-        mode: 'decode',
-        document_id: document.id,
-        notice_type: 'auto-detect',
-        s3_bucket: document.s3Bucket,
-        s3_key: document.s3Key,
-      });
-
-      const result = response.data;
-
-      // Build formatted analysis content
-      const analysisContent = formatAnalysisResponse(result);
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: analysisContent,
-        timestamp: new Date(),
-        isAnalysis: true,
-        analysisResult: result,
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (err: any) {
-      console.error('Analysis failed:', err);
-      const errorDetail = err.response?.data?.detail;
-      let errorMessage = 'Analysis failed. ';
-
-      if (typeof errorDetail === 'object' && errorDetail?.stage) {
-        errorMessage += `Stage: ${errorDetail.stage}. ${errorDetail.error || ''}`;
-      } else if (typeof errorDetail === 'string') {
-        errorMessage += errorDetail;
-      } else {
-        errorMessage += 'Please check that the AI service is running and try again.';
-      }
-
-      const errMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `⚠️ ${errorMessage}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
     const text = inputValue.trim();
+    if (!text) return;
     setInputValue('');
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setChatLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.post('/api/ai/v1/ask', {
-        mode: 'chat',
-        message: text,
-      });
-
-      const result = response.data;
-      const answer = result.answer ?? '';
-      const citations = result.citations ?? [];
-      const content = citations.length > 0
-        ? `${answer}\n\n**References:**\n${citations.map((c: string) => `• ${c}`).join('\n')}`
-        : answer;
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: content || 'I could not generate a response. Please try again.',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (err: any) {
-      console.error('Chat failed:', err);
-      const errorDetail = err.response?.data?.detail;
-      let errorMessage = 'Chat failed. ';
-
-      if (typeof errorDetail === 'object' && errorDetail?.stage) {
-        errorMessage += `Stage: ${errorDetail.stage}. ${errorDetail.error || ''}`;
-      } else if (typeof errorDetail === 'string') {
-        errorMessage += errorDetail;
-      } else {
-        errorMessage += 'Please check that the AI service is running and try again.';
-      }
-
-      const errMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `⚠️ ${errorMessage}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
-    } finally {
-      setChatLoading(false);
-    }
+    await sendMessage(text);
   };
 
-  const formatAnalysisResponse = (result: any): string => {
-    // AI service NoticeResponse: { draft_reply, citations, is_grounded }
-    let content = '';
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-    if (result.draft_reply) {
-      content += `**Draft Reply:**\n${result.draft_reply}\n\n`;
-    }
-
-    if (result.citations?.length) {
-      content += `**Legal References:**\n${result.citations.map((c: string) => `• ${c}`).join('\n')}\n\n`;
-    }
-
-    if (result.is_grounded !== undefined) {
-      content += `**Grounded in law:** ${result.is_grounded ? 'Yes' : 'No'}`;
-    }
-
-    // Legacy / extended fields if present
-    if (result.summary) content += `\n\n**Summary:**\n${result.summary}`;
-    if (result.key_issues?.length) content += `\n\n**Key Issues:**\n${result.key_issues.map((i: string) => `• ${i}`).join('\n')}`;
-    if (result.recommended_actions?.length) content += `\n\n**Recommended Actions:**\n${result.recommended_actions.map((a: string) => `• ${a}`).join('\n')}`;
-    if (result.legal_references?.length && !result.citations?.length) content += `\n\n**Legal References:**\n${result.legal_references.map((r: string) => `• ${r}`).join('\n')}`;
-    if (result.sources?.length && !result.citations?.length) content += `\n\n**Sources:**\n${result.sources.map((s: string) => `• ${s}`).join('\n')}`;
-
-    if (!content.trim()) {
-      content = JSON.stringify(result, null, 2);
-    }
-
-    return content;
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
-
-  if (loading) {
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (docLoading) {
     return (
       <>
         <Header title="Agentic Analysis" subtitle="Loading..." />
@@ -260,6 +62,13 @@ export default function ChatPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col bg-background-light relative">
+
+          {/* Error Banner */}
+          {docError && (
+            <div className="px-6 lg:px-8 py-2 bg-red-50 border-b border-red-200 text-red-700 text-sm">
+              {docError}
+            </div>
+          )}
 
           {/* Analysis Action Bar */}
           {document && !analyzing && (
@@ -286,7 +95,7 @@ export default function ChatPage() {
           )}
 
           {/* No Document State */}
-          {!document && (
+          {!document && !docLoading && (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center max-w-md">
                 <div className="w-16 h-16 bg-background-light rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -309,6 +118,13 @@ export default function ChatPage() {
           {/* Chat History */}
           {document && (
             <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 scrollbar-thin">
+              {historyLoading && (
+                <div className="flex items-center gap-3 justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="text-sm text-text-sub">Loading conversation history...</span>
+                </div>
+              )}
+
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -375,8 +191,8 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {/* Chat loading indicator */}
-              {chatLoading && (
+              {/* Loading states */}
+              {(chatLoading || analyzing) && (
                 <div className="flex gap-4 max-w-3xl">
                   <div className="w-9 h-9 rounded-xl bg-primary text-surface-light flex items-center justify-center flex-shrink-0 shadow-sm">
                     <Bot className="w-5 h-5" />
@@ -384,7 +200,9 @@ export default function ChatPage() {
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2.5">
                       <span className="font-semibold text-sm text-text-heading">TaxCopilot AI</span>
-                      <span className="text-[11px] text-text-light italic">Thinking...</span>
+                      <span className="text-[11px] text-text-light italic">
+                        {analyzing ? 'Analyzing...' : 'Thinking...'}
+                      </span>
                     </div>
                     <div className="bg-secondary-soft border border-secondary/20 rounded-2xl rounded-tl-none p-5 flex items-center gap-3">
                       <div className="flex space-x-1.5">
@@ -392,30 +210,11 @@ export default function ChatPage() {
                         <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                         <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
-                      <span className="text-sm text-text-sub italic">Searching legal knowledge base...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Analyzing indicator */}
-              {analyzing && (
-                <div className="flex gap-4 max-w-3xl">
-                  <div className="w-9 h-9 rounded-xl bg-primary text-surface-light flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-semibold text-sm text-text-heading">TaxCopilot AI</span>
-                      <span className="text-[11px] text-text-light italic">Analyzing...</span>
-                    </div>
-                    <div className="bg-secondary-soft border border-secondary/20 rounded-2xl rounded-tl-none p-5 flex items-center gap-3">
-                      <div className="flex space-x-1.5">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      <span className="text-sm text-text-sub italic">Running OCR, cross-referencing legal precedents, and generating analysis...</span>
+                      <span className="text-sm text-text-sub italic">
+                        {analyzing
+                          ? 'Running OCR, cross-referencing legal precedents, and generating analysis...'
+                          : 'Searching legal knowledge base...'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -439,14 +238,14 @@ export default function ChatPage() {
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder="Type your instructions or provide context..."
                     className="flex-1 bg-transparent py-3 px-3 text-text-main placeholder-text-light text-sm focus:outline-none"
                     disabled={analyzing || chatLoading}
                   />
                   <div className="flex gap-1 pr-3">
                     <button
-                      onClick={handleSendMessage}
+                      onClick={handleSend}
                       disabled={!inputValue.trim() || analyzing || chatLoading}
                       className="p-2.5 bg-primary text-surface-light rounded-xl hover:bg-primary-dark transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -485,27 +284,21 @@ export default function ChatPage() {
               <div>
                 <h4 className="text-[11px] font-bold text-text-light uppercase tracking-wider mb-3">Analysis Pipeline</h4>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${analyzing ? 'bg-secondary animate-pulse' : messages.length > 1 ? 'bg-primary' : 'bg-border-default'}`} />
-                    <div>
-                      <p className="text-sm text-text-heading">AWS Textract OCR</p>
-                      <p className="text-[11px] text-text-light">Extract text from document</p>
+                  {[
+                    { label: 'AWS Textract OCR', sub: 'Extract text from document' },
+                    { label: 'Knowledge Base Search', sub: 'Find relevant legal provisions' },
+                    { label: 'Claude Analysis', sub: 'Generate analysis & draft reply' },
+                  ].map((step) => (
+                    <div key={step.label} className="flex items-start gap-3">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        analyzing ? 'bg-secondary animate-pulse' : messages.length > 1 ? 'bg-primary' : 'bg-border-default'
+                      }`} />
+                      <div>
+                        <p className="text-sm text-text-heading">{step.label}</p>
+                        <p className="text-[11px] text-text-light">{step.sub}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${analyzing ? 'bg-secondary animate-pulse' : messages.length > 1 ? 'bg-primary' : 'bg-border-default'}`} />
-                    <div>
-                      <p className="text-sm text-text-heading">Knowledge Base Search</p>
-                      <p className="text-[11px] text-text-light">Find relevant legal provisions</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${analyzing ? 'bg-secondary animate-pulse' : messages.length > 1 ? 'bg-primary' : 'bg-border-default'}`} />
-                    <div>
-                      <p className="text-sm text-text-heading">Claude Analysis</p>
-                      <p className="text-[11px] text-text-light">Generate analysis & draft reply</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

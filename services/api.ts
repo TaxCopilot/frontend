@@ -1,4 +1,11 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
+
+// Extend AxiosRequestConfig to support our custom flag
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    __skipAuthError?: boolean;
+  }
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -23,7 +30,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !error.config?.__skipAuthError
+    ) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }

@@ -51,7 +51,9 @@ export const documentService = {
 
   /** Get a single analysis file by ID */
   async getAnalysisFile(id: string): Promise<AnalysisFile> {
-    const { data } = await api.get(`/api/analysis-files/${id}`);
+    const { data } = await api.get(`/api/analysis-files/${id}`, {
+      __skipAuthError: true,
+    });
     return data.data;
   },
 

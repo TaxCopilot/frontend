@@ -46,25 +46,34 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background-light">
       <Header title="Settings" subtitle="Control how TaxCopilot behaves for your workflow." />
 
-      <div className="flex-1 overflow-y-auto px-8 lg:px-12 py-8 bg-background-light scrollbar-thin">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto px-8 lg:px-12 py-10 scrollbar-thin">
+        <div className="max-w-3xl mx-auto space-y-8 relative">
+          
+          {/* Decorative background glow */}
+          <div className="absolute right-0 top-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
 
           {/* TaxCopilot Preferences */}
-          <div className="bg-surface-light border border-border-default rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-text-heading mb-1">TaxCopilot Preferences</h3>
-            <p className="text-xs text-text-light mb-4">Control how TaxCopilot behaves for your workflow.</p>
+          <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
+            
+            <div className="relative z-10 mb-8">
+              <h3 className="text-xl font-serif font-semibold text-text-heading mb-1.5">TaxCopilot Preferences</h3>
+              <p className="text-sm text-text-sub max-w-lg">Control how your AI agent behaves across cases, and manage global visibility for your practice.</p>
+            </div>
 
-            <div className="divide-y divide-border-subtle">
+            <div className="space-y-2 relative z-10">
               {prefs.map(({ icon: Icon, title, desc, value, onChange }) => (
-                <div key={title} className="flex items-center justify-between py-4">
-                  <div className="flex items-start gap-3">
-                    <Icon className="w-4 h-4 text-text-light mt-0.5 flex-shrink-0" />
+                <div key={title} className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300 group">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-300">
+                      <Icon className="w-5 h-5" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-text-heading">{title}</p>
-                      <p className="text-xs text-text-sub mt-0.5">{desc}</p>
+                      <p className="text-sm font-semibold text-text-heading tracking-tight">{title}</p>
+                      <p className="text-sm text-text-sub mt-0.5">{desc}</p>
                     </div>
                   </div>
                   <Toggle value={value} onChange={onChange} />

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Plus, FileText, Scale, MoreVertical, LayoutGrid, List, Filter, ArrowUpDown, X, Loader2, FileType, Gavel, ScrollText, Upload, AlertTriangle, Trash2, Edit2 } from 'lucide-react';
+import { Sparkles, Plus, FileText, Scale, MoreVertical, LayoutGrid, List, Filter, ArrowUpDown, X, Loader2, FileType, Gavel, ScrollText, Upload, AlertTriangle, Trash2, Edit2, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useDrafts } from '@/hooks/useDrafts';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,6 +44,7 @@ export default function WorkspacePage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'az'>('latest');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Draft Context Menu State
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
@@ -135,7 +136,12 @@ export default function WorkspacePage() {
 
   return (
     <>
-      <Header title="Workspace" />
+      <Header 
+        title="Workspace" 
+        onSearch={setSearchTerm} 
+        searchValue={searchTerm} 
+        searchPlaceholder="Search drafts..." 
+      />
       <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 pt-8 scrollbar-thin">
 
         {/* Hero Banner */}
@@ -256,6 +262,7 @@ export default function WorkspacePage() {
         {(() => {
           const filtered = drafts
             .filter(d => activeFilter ? d.category === activeFilter : true)
+            .filter(d => searchTerm ? d.title.toLowerCase().includes(searchTerm.toLowerCase()) : true)
             .sort((a, b) => {
               if (sortBy === 'latest') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
               if (sortBy === 'oldest') return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
