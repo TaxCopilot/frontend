@@ -36,13 +36,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, isPublicRoute, router]);
 
-  // Show nothing while loading on protected routes
+  // Show skeleton while loading on protected routes (avoids flash of login page)
   if (isLoading && !isPublicRoute) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-light">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-text-sub">Loading...</p>
+      <div className="min-h-screen flex flex-col bg-background-light animate-pulse">
+        <div className="h-16 bg-surface-light border-b border-border-subtle flex items-center px-6">
+          <div className="h-6 bg-background-light rounded w-32" />
+        </div>
+        <div className="flex-1 p-8 flex flex-col gap-6">
+          <div className="h-8 bg-surface-light rounded-lg w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-surface-light rounded-xl" />
+            ))}
+          </div>
         </div>
       </div>
     );

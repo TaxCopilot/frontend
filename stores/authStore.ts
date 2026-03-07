@@ -23,13 +23,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     const res = await authService.login(email, password);
     localStorage.setItem('token', res.token);
-    set({ user: res.user, token: res.token, isAuthenticated: true });
+    set({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false });
   },
 
   register: async (email, name, password) => {
     const res = await authService.register(email, name, password);
     localStorage.setItem('token', res.token);
-    set({ user: res.user, token: res.token, isAuthenticated: true });
+    set({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false });
   },
 
   logout: () => {

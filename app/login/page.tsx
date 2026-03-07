@@ -47,7 +47,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push('/workspace');
+      router.replace('/workspace');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
       setError(axiosErr.response?.data?.error || 'Invalid email or password');
