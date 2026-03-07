@@ -94,23 +94,40 @@ export default function IntakePage() {
         <div className="max-w-4xl mx-auto">
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-12 relative">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-border-default -z-10" />
+          <div className="flex items-center mb-12">
 
-            <div className="flex flex-col items-center gap-2 bg-background-light px-2">
-              <div className="w-10 h-10 rounded-full bg-primary text-surface-light flex items-center justify-center font-bold shadow-md ring-4 ring-surface-light">1</div>
+            {/* Step 1 – Upload (always active) */}
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md ring-4 ring-background-light">1</div>
               <span className="text-sm font-medium text-text-heading">Upload</span>
             </div>
 
-            <div className="flex flex-col items-center gap-2 bg-background-light px-2">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ring-4 ring-surface-light ${recentUploads.length > 0 ? 'bg-primary text-surface-light shadow-md' : 'bg-surface-light border-2 border-border-default text-text-light'}`}>2</div>
-              <span className={`text-sm font-medium ${recentUploads.length > 0 ? 'text-text-heading' : 'text-text-light'}`}>Analyze</span>
+            {/* Connector 1→2 */}
+            <div className="flex-1 mx-2 mt-[-18px]">
+              <div className="h-1 w-full bg-border-default rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${recentUploads.length > 0 ? 'w-full bg-primary' : 'w-0'}`} />
+              </div>
             </div>
 
-            <div className="flex flex-col items-center gap-2 bg-background-light px-2">
-              <div className="w-10 h-10 rounded-full bg-surface-light border-2 border-border-default text-text-light flex items-center justify-center font-bold ring-4 ring-surface-light">3</div>
+            {/* Step 2 – Analyze */}
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ring-4 ring-background-light transition-all duration-300 ${recentUploads.length > 0 ? 'bg-primary text-white shadow-md' : 'bg-surface-light border-2 border-border-default text-text-light'}`}>2</div>
+              <span className={`text-sm font-medium transition-colors ${recentUploads.length > 0 ? 'text-text-heading' : 'text-text-light'}`}>Analyze</span>
+            </div>
+
+            {/* Connector 2→3 */}
+            <div className="flex-1 mx-2 mt-[-18px]">
+              <div className="h-1 w-full bg-border-default rounded-full overflow-hidden">
+                <div className="h-full rounded-full w-0 bg-primary" />
+              </div>
+            </div>
+
+            {/* Step 3 – Draft */}
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-surface-light border-2 border-border-default text-text-light flex items-center justify-center font-bold ring-4 ring-background-light">3</div>
               <span className="text-sm font-medium text-text-light">Draft</span>
             </div>
+
           </div>
 
           <div className="bg-surface-light border border-border-default rounded-3xl p-8 shadow-card mb-8">
@@ -122,13 +139,12 @@ export default function IntakePage() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer group mb-8 ${
-                isDragOver
-                  ? 'border-primary bg-primary/10 scale-[1.01]'
-                  : uploading
+              className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer group mb-8 ${isDragOver
+                ? 'border-primary bg-primary/10 scale-[1.01]'
+                : uploading
                   ? 'border-secondary bg-secondary/5'
                   : 'border-border-default hover:border-primary hover:bg-primary/5'
-              }`}
+                }`}
             >
               <input
                 ref={fileInputRef}
@@ -175,67 +191,7 @@ export default function IntakePage() {
               </div>
             )}
 
-            {/* Recent Uploads */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-text-heading">
-                Uploaded Files
-                {recentUploads.length > 0 && (
-                  <span className="ml-2 text-xs bg-background-light text-text-light border border-border-subtle px-2 py-0.5 rounded-full font-normal">
-                    {recentUploads.length}
-                  </span>
-                )}
-              </h4>
-
-              {loadingFiles ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                </div>
-              ) : recentUploads.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-text-sub">
-                  <FileText className="w-8 h-8 mb-2 text-text-light" />
-                  <p className="text-sm">No files uploaded yet. Upload a document to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentUploads.map((file) => (
-                    <div
-                      key={file.id}
-                      onClick={() => router.push(`/workspace/chat?docId=${file.id}`)}
-                      className="flex items-center justify-between p-4 border border-border-subtle rounded-xl bg-background-light/50 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-red-soft text-red-text rounded-lg flex items-center justify-center">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-text-heading group-hover:text-primary transition-colors">{file.filename}</p>
-                          <p className="text-xs text-text-light">{formatSize(file.sizeBytes)} • {formatTime(file.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">Analyze →</span>
-                        <CheckCircle2 className="w-5 h-5 text-green-text" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
-
-          {/* Proceed to Analysis */}
-          {recentUploads.length > 0 && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => router.push(`/workspace/chat?docId=${recentUploads[0].id}`)}
-                className="inline-flex items-center gap-2 bg-secondary hover:bg-secondary-hover text-secondary-text px-8 py-3.5 rounded-xl font-semibold shadow-float transition-all transform hover:-translate-y-0.5"
-              >
-                Analyze Latest Upload
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-
         </div>
       </div>
     </>

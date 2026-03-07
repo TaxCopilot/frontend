@@ -151,7 +151,7 @@ export default function WorkspacePage() {
             </p>
             <button
               onClick={() => setShowTemplateModal(true)}
-              className="bg-secondary hover:bg-secondary-hover text-text-heading px-6 py-3.5 rounded-xl text-sm font-semibold shadow-float transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2.5"
+              className="bg-primary hover:bg-primary-dark text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-float transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2.5"
             >
               <Plus className="w-5 h-5" />
               Create New Draft
