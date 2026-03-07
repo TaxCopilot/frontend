@@ -15,6 +15,16 @@ export interface ChatMessagePayload {
   document_id?: string;
 }
 
+export interface StrategyPayload {
+  document_id: string;
+  account_details?: string;
+}
+
+export interface DraftPayload {
+  document_id: string;
+}
+
+// NoticeResponse from backend (often used by decode)
 export interface NoticeResponse {
   draft_reply?: string;
   citations?: string[];
@@ -24,6 +34,30 @@ export interface NoticeResponse {
   recommended_actions?: string[];
   legal_references?: string[];
   sources?: string[];
+}
+
+// AnalysisResponse from backend (for mode: analyze)
+export interface AnalysisResponse {
+  summary: string;
+  sections_applied: string[];
+  demands: { description: string; amount: string }[];
+  deadline: string;
+  immediate_actions: string[];
+  citations: string[];
+}
+
+// StrategyResponse from backend (for mode: strategy)
+export interface StrategyResponse {
+  strategy_steps: string[];
+  estimated_risk: string;
+  suggested_reply_points: string[];
+  disclaimer: string;
+}
+
+// DraftHtmlResponse from backend (for mode: draft)
+export interface DraftHtmlResponse {
+  html_content: string;
+  citations: string[];
 }
 
 export interface ChatResponse {
@@ -43,10 +77,10 @@ export interface ChatMessage {
 
 export const chatService = {
   /**
-   * Run AI document analysis (decode mode).
+   * Run AI document processing (decode mode).
    * Calls POST /api/ai/v1/ask via the gateway.
    */
-  async analyzeDocument(payload: AnalyzeDocumentPayload): Promise<NoticeResponse> {
+  async decodeDocument(payload: AnalyzeDocumentPayload): Promise<NoticeResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'decode',
       document_id: payload.document_id,
@@ -54,6 +88,46 @@ export const chatService = {
       s3_bucket: payload.s3_bucket,
       s3_key: payload.s3_key,
       regenerate: payload.regenerate ?? false,
+    });
+    return data;
+  },
+
+  /**
+   * Run deep structured analysis of a parsed document (analyze mode).
+   */
+  async analyzeNotice(payload: { document_id: string; s3_bucket?: string; s3_key?: string }): Promise<AnalysisResponse> {
+    const { data } = await api.post('/api/ai/v1/ask', {
+      mode: 'analyze',
+      document_id: payload.document_id,
+      s3_bucket: payload.s3_bucket,
+      s3_key: payload.s3_key,
+    });
+    return data;
+  },
+
+  /**
+   * Generate a defense strategy (strategy mode).
+   */
+  async generateStrategy(payload: StrategyPayload & { s3_bucket?: string; s3_key?: string }): Promise<StrategyResponse> {
+    const { data } = await api.post('/api/ai/v1/ask', {
+      mode: 'strategy',
+      document_id: payload.document_id,
+      account_details: payload.account_details,
+      s3_bucket: payload.s3_bucket,
+      s3_key: payload.s3_key,
+    });
+    return data;
+  },
+
+  /**
+   * Generate an HTML-formatted draft reply (draft mode).
+   */
+  async generateDraft(payload: DraftPayload & { s3_bucket?: string; s3_key?: string }): Promise<DraftHtmlResponse> {
+    const { data } = await api.post('/api/ai/v1/ask', {
+      mode: 'draft',
+      document_id: payload.document_id,
+      s3_bucket: payload.s3_bucket,
+      s3_key: payload.s3_key,
     });
     return data;
   },
@@ -72,33 +146,24 @@ export const chatService = {
   },
 
   /**
-   * Load chat history for a document from the backend.
-   * Returns [] if no session exists yet.
+   * Load chat history for a document.
+   * History is managed server-side by the AI service per session.
+   * Returns [] here; full history loads on each AI mode call.
    */
-  async getHistory(documentId: string): Promise<ChatMessage[]> {
-    try {
-      const { data } = await api.get(`/api/chat-sessions/${documentId}`, {
-        __skipAuthError: true,
-      });
-      return data.data?.messages ?? [];
-    } catch {
-      return [];
-    }
+  async getHistory(_documentId: string): Promise<ChatMessage[]> {
+    return [];
   },
 
   /**
-   * Persist a single chat message to the backend.
+   * No-op: message persistence is handled server-side by the AI service
+   * (db_service.py appends to chat_messages table on every AI call).
    */
   async saveMessage(
-    documentId: string,
-    role: 'user' | 'assistant',
-    content: string,
-    isAnalysis = false,
+    _documentId: string,
+    _role: 'user' | 'assistant',
+    _content: string,
+    _isAnalysis = false,
   ): Promise<void> {
-    await api.post(`/api/chat-sessions/${documentId}/messages`, {
-      role,
-      content,
-      isAnalysis,
-    });
+    // Server-side persistence only — no frontend DB call needed.
   },
 };
