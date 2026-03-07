@@ -2,515 +2,237 @@
 
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
+import { Plus, FolderOpen, FileText, Scale, Loader2, Search, LayoutGrid, List, MessageCircle, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Plus, FileText, Scale, MoreVertical, LayoutGrid, List, Filter, ArrowUpDown, X, Loader2, FileType, Gavel, ScrollText, Upload, AlertTriangle, Trash2, Edit2, Search } from 'lucide-react';
-import Link from 'next/link';
-import { useDrafts } from '@/hooks/useDrafts';
+import { useCases } from '@/hooks/useCases';
+import { caseService, Case } from '@/services/caseService';
 import { useAuthStore } from '@/stores/authStore';
-import { useDraftStore } from '@/stores/draftStore';
-import { documentService } from '@/services/documentService';
+import { PageSkeleton } from '@/components/SkeletonLoader';
 
-const TEMPLATE_ICONS: Record<string, typeof FileText> = {
-  scn_reply: AlertTriangle,
-  appeal_memorandum: Gavel,
-  legal_opinion: ScrollText,
-  general: FileType,
-};
-
-const TEMPLATE_COLORS: Record<string, string> = {
-  scn_reply: 'bg-red-soft text-red-text',
-  appeal_memorandum: 'bg-blue-soft text-blue-text',
-  legal_opinion: 'bg-purple-soft text-purple-text',
-  general: 'bg-teal-soft text-teal-text',
-};
+function timeAgo(dateString: string) {
+  const d = new Date(dateString);
+  const now = new Date();
+  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (sec < 60) return 'Just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return 'Yesterday';
+  if (day < 7) return `${day}d ago`;
+  if (day < 30) return `${Math.floor(day / 7)}w ago`;
+  return `${Math.floor(day / 30)}mo ago`;
+}
 
 export default function WorkspacePage() {
-  const { drafts, templates, loadTemplates, createDraft, isLoading } = useDrafts();
+  const { cases, isLoading, fetchCases } = useCases();
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
-  // Step 2 form state
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftAuthor, setDraftAuthor] = useState('');
-  const [draftDescription, setDraftDescription] = useState('');
-  const [modalStep, setModalStep] = useState<1 | 2>(1);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfUploading, setPdfUploading] = useState(false);
-  // View / Filter / Sort
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [showSortMenu, setShowSortMenu] = useState(false);
-  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'az'>('latest');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Draft Context Menu State
-  const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingDraft, setEditingDraft] = useState<any>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editCategory, setEditCategory] = useState('GENERAL');
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleOutsideClick = () => setDropdownOpenId(null);
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, []);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   useEffect(() => {
-    if (showTemplateModal) {
-      loadTemplates();
-    }
-  }, [showTemplateModal, loadTemplates]);
+    fetchCases();
+  }, [fetchCases]);
 
-  const openStep2 = (templateId: string | null) => {
-    setSelectedTemplate(templateId);
-    setDraftTitle('');
-    setDraftAuthor(user?.name || '');
-    setDraftDescription('');
-    setPdfFile(null);
-    setModalStep(2);
-  };
-
-  const closeModal = () => {
-    setShowTemplateModal(false);
-    setModalStep(1);
-    setSelectedTemplate(null);
-  };
-
-  const handleCreate = async () => {
-    if (!draftTitle.trim()) return;
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
     setCreating(true);
     try {
-      // If PDF is attached, upload and extract text first
-      let pdfContent: string | undefined;
-      if (pdfFile) {
-        setPdfUploading(true);
-        const uploadResult = await documentService.upload(pdfFile);
-        if (uploadResult.extractedHtml) {
-          pdfContent = uploadResult.extractedHtml;
-        }
-        setPdfUploading(false);
-      }
-
-      const draft = await createDraft({
-        title: draftTitle.trim(),
-        templateId: selectedTemplate || undefined,
-        content: pdfContent,
-      });
-      closeModal();
-      router.push(`/workspace/editor?id=${draft.id}`);
-    } catch {
+      const c = await caseService.create({ title: title.trim(), description: description.trim() || undefined });
+      setShowCreateModal(false);
+      setTitle('');
+      setDescription('');
+      router.push(`/workspace/case/${c.id}`);
+    } finally {
       setCreating(false);
-      setPdfUploading(false);
     }
   };
 
-  const handleEditSubmit = async () => {
-    if (!editingDraft) return;
-    try {
-      await useDraftStore.getState().updateMetadata(editingDraft.id, {
-        title: editTitle,
-        category: editCategory,
-      });
-      setShowEditModal(false);
-      setEditingDraft(null);
-    } catch (error) {
-      console.error('Failed to update draft:', error);
-    }
-  };
+  let filtered = cases.filter(
+    (c) =>
+      !searchTerm ||
+      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleTrash = async (id: string) => {
-    try {
-      await useDraftStore.getState().trashDraft(id);
-      setDropdownOpenId(null);
-    } catch (error) {
-      console.error('Failed to trash draft:', error);
-    }
-  };
+  if (sortBy === 'name') {
+    filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+  } else {
+    filtered = [...filtered].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }
 
   const firstName = user?.name?.split(' ')[0] || 'User';
 
+  if (isLoading) {
+    return (
+      <>
+        <Header title="Workspace" subtitle="Your tax cases" />
+        <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 pt-8 scrollbar-thin">
+          <PageSkeleton />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <Header 
-        title="Workspace" 
-        onSearch={setSearchTerm} 
-        searchValue={searchTerm} 
-        searchPlaceholder="Search drafts..." 
-      />
+      <Header title="Workspace" subtitle={`Good to see you, ${firstName}`} />
       <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 pt-8 scrollbar-thin">
-
-        {/* Hero Banner */}
-        <div className="flex flex-col md:flex-row items-center justify-between bg-gradient-to-br from-aqua-tint to-surface-light border border-border-subtle rounded-2xl p-8 mb-12 relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="relative z-10 max-w-2xl">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="bg-secondary/20 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider uppercase">AI Agent</span>
-            </div>
-            <h2 className="text-3xl font-serif text-text-heading mb-3 tracking-tight">Good morning, {firstName}.</h2>
-            <p className="text-text-sub mb-8 leading-relaxed max-w-lg font-light">
-              Your AI agent is ready. Upload a tax notice to analyze root causes, cross-reference laws, and draft response strategies instantly.
-            </p>
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-float transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2.5"
-            >
-              <Plus className="w-5 h-5" />
-              Create New Draft
-            </button>
-          </div>
-          <div className="hidden md:flex relative z-10 items-center justify-center pr-12 gap-6 opacity-80">
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 bg-surface-light rounded-xl shadow-card flex items-center justify-center text-primary/80">
-                <Scale className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-4 mt-8">
-              <div className="w-12 h-12 bg-surface-light rounded-xl shadow-card flex items-center justify-center text-primary/80">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div className="w-12 h-12 bg-surface-light rounded-xl shadow-card flex items-center justify-center text-secondary">
-                <Sparkles className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
+        {/* CTA Section - Image 3 style */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-text-heading mb-2">Ready to analyze a new case?</h2>
+          <p className="text-text-sub text-sm max-w-2xl mb-6">
+            Upload a tax notice or legal document. The Agentic AI will analyze the root cause, cross-reference laws, and draft a response strategy instantly.
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3.5 rounded-xl font-semibold shadow-md hover:bg-primary-dark transition-all"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Start Agentic Chat
+          </button>
         </div>
 
-        {/* File Library Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <h3 className="text-lg font-medium text-text-heading flex items-center gap-2">
-            My Drafts
-            <span className="text-xs bg-background-light text-text-light border border-border-subtle px-2 py-0.5 rounded-full font-normal">{drafts.length}</span>
-          </h3>
-          <div className="flex gap-3 items-center">
-            {/* Grid / List toggle */}
-            <div className="flex bg-background-light rounded-lg p-1 border border-border-subtle">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 px-2.5 rounded transition-colors ${viewMode === 'grid' ? 'text-primary bg-surface-light shadow-sm' : 'text-text-light hover:text-text-sub'
-                  }`}
-              >
-                <LayoutGrid className="w-[18px] h-[18px]" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 px-2.5 rounded transition-colors ${viewMode === 'list' ? 'text-primary bg-surface-light shadow-sm' : 'text-text-light hover:text-text-sub'
-                  }`}
-              >
-                <List className="w-[18px] h-[18px]" />
-              </button>
-            </div>
-
-            {/* Filter */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
-                className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${activeFilter ? 'text-primary border-primary/30 bg-primary/5' : 'text-text-sub border-transparent hover:border-border-subtle hover:bg-background-light'
-                  }`}
-              >
-                <Filter className="w-[18px] h-[18px]" />
-                Filter{activeFilter ? `: ${activeFilter.replace('_', ' ')}` : ''}
-              </button>
-              {showFilterMenu && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-30">
-                  {[null, 'GENERAL', 'SCN_REPLY', 'APPEAL_MEMORANDUM', 'LEGAL_OPINION'].map((cat) => (
-                    <button
-                      key={cat ?? 'all'}
-                      onClick={() => { setActiveFilter(cat); setShowFilterMenu(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeFilter === cat ? 'text-primary bg-primary/5 font-medium' : 'text-text-sub hover:bg-background-light'
-                        }`}
-                    >
-                      {cat === null ? 'All Categories' : cat.replace('_', ' ')}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Sort by */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
-                className="flex items-center gap-2 text-sm font-medium text-text-sub hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-transparent hover:border-border-subtle hover:bg-background-light"
-              >
-                <ArrowUpDown className="w-[18px] h-[18px]" />
-                {sortBy === 'latest' ? 'Latest' : sortBy === 'oldest' ? 'Oldest' : 'A–Z'}
-              </button>
-              {showSortMenu && (
-                <div className="absolute right-0 top-full mt-1 w-36 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-30">
-                  {([['latest', 'Latest'], ['oldest', 'Oldest'], ['az', 'A–Z']] as const).map(([val, label]) => (
-                    <button
-                      key={val}
-                      onClick={() => { setSortBy(val); setShowSortMenu(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortBy === val ? 'text-primary bg-primary/5 font-medium' : 'text-text-sub hover:bg-background-light'
-                        }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* File Grid / List */}
-        {(() => {
-          const filtered = drafts
-            .filter(d => activeFilter ? d.category === activeFilter : true)
-            .filter(d => searchTerm ? d.title.toLowerCase().includes(searchTerm.toLowerCase()) : true)
-            .sort((a, b) => {
-              if (sortBy === 'latest') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-              if (sortBy === 'oldest') return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-              return a.title.localeCompare(b.title);
-            });
-          return (
-            <div className={viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-              : 'flex flex-col gap-2'
-            }>
-              {/* New Draft Card — grid mode only */}
-              {viewMode === 'grid' ? (
-                <button onClick={() => setShowTemplateModal(true)} className="group border border-dashed border-border-default rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all h-56">
-                  <div className="w-12 h-12 rounded-full bg-background-light group-hover:bg-surface-light flex items-center justify-center transition-colors shadow-sm">
-                    <Plus className="w-6 h-6 text-text-light group-hover:text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-text-sub group-hover:text-primary transition-colors">New Draft</span>
+        {/* Cases Section */}
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-lg font-semibold text-text-heading">
+              Cases <span className="text-text-light font-normal">{filtered.length}</span>
+            </h3>
+            <div className="flex items-center gap-3">
+              {/* Floating search - icon + minimal */}
+              <div className="relative flex items-center rounded-xl border border-border-default bg-white pl-3 pr-4 py-2 w-44 sm:w-52 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all">
+                <Search className="w-4 h-4 text-text-light flex-shrink-0" aria-hidden />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 min-w-0 bg-transparent px-2 py-0.5 text-sm placeholder-text-light focus:outline-none"
+                  aria-label="Search cases"
+                />
+              </div>
+              {/* Sort by */}
+              <div className="relative">
+                <button
+                  onClick={() => setSortDropdownOpen((o) => !o)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-sub hover:bg-background-light"
+                >
+                  Sort by <ChevronDown className="w-4 h-4" />
                 </button>
-              ) : (
-                <button onClick={() => setShowTemplateModal(true)} className="group border border-dashed border-border-default rounded-xl flex items-center gap-3 px-4 py-3 hover:border-primary hover:bg-primary/5 transition-all w-full">
-                  <div className="w-9 h-9 rounded-lg border border-dashed border-border-default group-hover:border-primary flex items-center justify-center flex-shrink-0 transition-colors">
-                    <Plus className="w-4 h-4 text-text-light group-hover:text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-text-sub group-hover:text-primary transition-colors">New Draft</span>
-                </button>
-              )}
-
-              {/* Draft Cards */}
-              {isLoading ? (
-                <div className="col-span-4 flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="col-span-4 flex flex-col items-center justify-center py-12 text-text-sub">
-                  <FileText className="w-10 h-10 mb-3 text-text-light" />
-                  <p className="text-sm">{activeFilter ? 'No drafts match this filter.' : 'No drafts yet. Create your first draft to get started.'}</p>
-                </div>
-              ) : viewMode === 'grid' ? (
-                filtered.map((draft) => (
-                  <div key={draft.id} className="relative bg-surface-light rounded-xl shadow-card hover:shadow-card-hover transition-all group h-56 flex flex-col border border-transparent hover:border-primary/20">
-                    <Link href={`/workspace/editor?id=${draft.id}`} className="absolute inset-0 z-0 rounded-xl" title="Open draft"><span className="sr-only">Open draft</span></Link>
-                    <div className="absolute top-4 right-4 z-20">
-                      <div className={`transition-opacity ${dropdownOpenId === draft.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTimeout(() => setDropdownOpenId(dropdownOpenId === draft.id ? null : draft.id), 0); }} className="text-text-light hover:text-text-sub p-1.5 rounded-lg bg-background-light hover:bg-border-subtle/50 transition-colors shadow-sm">
-                          <MoreVertical className="w-5 h-5 pointer-events-none" />
-                        </button>
-                        {dropdownOpenId === draft.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-[100]">
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingDraft(draft); setEditTitle(draft.title); setEditCategory(draft.category); setShowEditModal(true); setDropdownOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-sub hover:bg-background-light hover:text-primary flex items-center gap-2">
-                              <Edit2 className="w-4 h-4 pointer-events-none" /> Edit Details
-                            </button>
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTrash(draft.id); }} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
-                              <Trash2 className="w-4 h-4 pointer-events-none" /> Move to Trash
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="relative z-10 p-5 flex-1 flex flex-col justify-between pointer-events-none">
-                      <div>
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${getCategoryColor(draft.category)}`}><FileText className="w-5 h-5" /></div>
-                        <h4 className="font-semibold text-text-heading text-base mb-1 line-clamp-2 leading-tight">{draft.title}</h4>
-                        <p className="text-xs text-text-light mt-1">{draft.case?.clientName || draft.category.replace('_', ' ')}</p>
-                      </div>
-                      <div className="border-t border-border-subtle pt-4 flex items-center justify-between">
-                        <span className="text-[11px] text-text-light font-medium uppercase tracking-wide">{timeAgo(draft.updatedAt)}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded border ${getStatusBadge(draft.status)}`}>{draft.status}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                /* List view */
-                filtered.map((draft) => (
-                  <div key={draft.id} className="relative bg-surface-light rounded-xl border border-border-default hover:border-primary/30 hover:shadow-sm transition-all group flex items-center gap-4 px-4 py-3">
-                    <Link href={`/workspace/editor?id=${draft.id}`} className="absolute inset-0 z-0 rounded-xl" title="Open draft"><span className="sr-only">Open draft</span></Link>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${getCategoryColor(draft.category)}`}><FileText className="w-4 h-4" /></div>
-                    <div className="flex-1 min-w-0 relative z-10 pointer-events-none">
-                      <h4 className="font-medium text-text-heading text-sm truncate">{draft.title}</h4>
-                      <p className="text-[11px] text-text-light mt-0.5">{draft.category.replace('_', ' ')} · {timeAgo(draft.updatedAt)}</p>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded border flex-shrink-0 relative z-10 pointer-events-none ${getStatusBadge(draft.status)}`}>{draft.status}</span>
-                    <div className="relative z-20 flex-shrink-0">
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTimeout(() => setDropdownOpenId(dropdownOpenId === draft.id ? null : draft.id), 0); }} className={`text-text-light hover:text-text-sub p-1.5 rounded-lg hover:bg-background-light transition-colors ${dropdownOpenId === draft.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <MoreVertical className="w-4 h-4 pointer-events-none" />
+                {sortDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setSortDropdownOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-border-default rounded-xl shadow-lg py-1.5 z-20">
+                      <button
+                        onClick={() => { setSortBy('recent'); setSortDropdownOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm ${sortBy === 'recent' ? 'bg-primary/5 text-primary font-medium' : 'text-text-sub hover:bg-background-light'}`}
+                      >
+                        Recent
                       </button>
-                      {dropdownOpenId === draft.id && (
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-light border border-border-default rounded-xl shadow-lg py-1 z-[100]">
-                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingDraft(draft); setEditTitle(draft.title); setEditCategory(draft.category); setShowEditModal(true); setDropdownOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-sub hover:bg-background-light hover:text-primary flex items-center gap-2">
-                            <Edit2 className="w-4 h-4 pointer-events-none" /> Edit Details
-                          </button>
-                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTrash(draft.id); }} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
-                            <Trash2 className="w-4 h-4 pointer-events-none" /> Move to Trash
-                          </button>
-                        </div>
-                      )}
+                      <button
+                        onClick={() => { setSortBy('name'); setSortDropdownOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm ${sortBy === 'name' ? 'bg-primary/5 text-primary font-medium' : 'text-text-sub hover:bg-background-light'}`}
+                      >
+                        Name
+                      </button>
                     </div>
-                  </div>
-                ))
-              )}
+                  </>
+                )}
+              </div>
+              {/* View mode */}
+              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-text-light hover:text-text-sub'}`}
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-text-light hover:text-text-sub'}`}
+                  aria-label="List view"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+          </div>
 
-          );
-        })()}
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'flex flex-col gap-3'}>
+            {/* Create New Case card - first */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex flex-col items-center justify-center min-h-[180px] rounded-xl border-2 border-border-default hover:border-primary/50 hover:bg-primary/5 transition-all text-text-sub hover:text-primary group bg-white"
+            >
+              <div className="w-14 h-14 rounded-xl bg-background-light group-hover:bg-primary/10 flex items-center justify-center mb-3">
+                <Plus className="w-7 h-7" />
+              </div>
+              <span className="font-semibold text-text-heading">Create New Case</span>
+            </button>
+
+            {filtered.map((c) => (
+              <CaseCard key={c.id} caseItem={c} viewMode={viewMode} onClick={() => router.push(`/workspace/case/${c.id}`)} />
+            ))}
+
+            {filtered.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                <FolderOpen className="w-12 h-12 text-text-light mb-3" />
+                <p className="text-text-sub text-sm">
+                  {searchTerm ? 'No cases match your search.' : 'No cases yet.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Template Selection Modal */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={closeModal}>
-          <div className="bg-surface-light rounded-2xl shadow-2xl border border-border-subtle w-full max-w-xl mx-4 relative" onClick={(e) => e.stopPropagation()}>
-
-            {modalStep === 1 ? (
-              <>
-                {/* Step 1: Choose template */}
-                <div className="flex items-center justify-between p-6 border-b border-border-subtle">
-                  <div>
-                    <h3 className="text-lg font-semibold text-text-heading">Choose a Template</h3>
-                    <p className="text-sm text-text-sub mt-1">Select a template to start your draft, or create a blank one.</p>
-                  </div>
-                  <button onClick={closeModal} className="p-2 rounded-lg hover:bg-background-light text-text-light hover:text-text-sub transition-colors">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-6 space-y-3">
-                  <button onClick={() => openStep2(null)} className="w-full flex items-center gap-4 p-4 rounded-xl border border-dashed border-border-default hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                    <div className="w-10 h-10 rounded-lg bg-background-light group-hover:bg-primary/10 flex items-center justify-center flex-shrink-0 transition-colors">
-                      <Plus className="w-5 h-5 text-text-light group-hover:text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-text-heading group-hover:text-primary transition-colors">Blank Draft</h4>
-                      <p className="text-xs text-text-light mt-0.5">Start from scratch</p>
-                    </div>
-                  </button>
-                  {templates.map((t) => {
-                    const Icon = TEMPLATE_ICONS[t.id] || FileText;
-                    const colorClass = TEMPLATE_COLORS[t.id] || 'bg-teal-soft text-teal-text';
-                    return (
-                      <button key={t.id} onClick={() => openStep2(t.id)} className="w-full flex items-center gap-4 p-4 rounded-xl border border-border-default hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-text-heading group-hover:text-primary transition-colors">{t.title}</h4>
-                          <p className="text-xs text-text-light mt-0.5">{t.category.replace('_', ' ')}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Step 2: Fill in details */}
-                <div className="flex items-center justify-between p-6 border-b border-border-subtle">
-                  <div>
-                    <h3 className="text-lg font-semibold text-text-heading">Draft Details</h3>
-                    <p className="text-sm text-text-sub mt-1">
-                      {selectedTemplate
-                        ? `Using: ${templates.find(t => t.id === selectedTemplate)?.title || 'Template'}`
-                        : 'Creating a blank draft'}
-                    </p>
-                  </div>
-                  <button onClick={closeModal} className="p-2 rounded-lg hover:bg-background-light text-text-light hover:text-text-sub transition-colors">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1.5" htmlFor="draft-title">Title <span className="text-red-400">*</span></label>
-                    <input
-                      id="draft-title"
-                      type="text"
-                      placeholder="e.g. Reply to GST Notice for ABC Traders"
-                      className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
-                      value={draftTitle}
-                      onChange={(e) => setDraftTitle(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1.5" htmlFor="draft-author">Author</label>
-                    <input
-                      id="draft-author"
-                      type="text"
-                      placeholder="Your name or firm name"
-                      className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
-                      value={draftAuthor}
-                      onChange={(e) => setDraftAuthor(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1.5" htmlFor="draft-desc">Description <span className="text-text-light font-normal">(optional)</span></label>
-                    <textarea
-                      id="draft-desc"
-                      rows={3}
-                      placeholder="Brief context about this draft..."
-                      className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all resize-none"
-                      value={draftDescription}
-                      onChange={(e) => setDraftDescription(e.target.value)}
-                    />
-                  </div>
-
-                  {/* PDF Upload (optional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1.5">
-                      Attach PDF <span className="text-text-light font-normal">(optional — text will be extracted)</span>
-                    </label>
-                    {pdfFile ? (
-                      <div className="flex items-center gap-3 p-3 border border-primary/30 bg-primary/5 rounded-xl">
-                        <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-                        <span className="text-sm text-text-heading flex-1 truncate">{pdfFile.name}</span>
-                        <button onClick={() => setPdfFile(null)} className="text-text-light hover:text-red-500 transition-colors p-1">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-border-default rounded-xl hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group">
-                        <Upload className="w-5 h-5 text-text-light group-hover:text-primary" />
-                        <span className="text-xs text-text-light group-hover:text-primary">Click to upload PDF</span>
-                        <input type="file" accept=".pdf" onChange={(e) => { if (e.target.files?.[0]) setPdfFile(e.target.files[0]); e.target.value = ''; }} className="hidden" />
-                      </label>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={() => setModalStep(1)} className="flex-1 px-4 py-2.5 border border-border-default rounded-xl text-sm font-medium text-text-sub hover:bg-background-light transition-colors">
-                      Back
-                    </button>
-                    <button
-                      onClick={handleCreate}
-                      disabled={creating || !draftTitle.trim()}
-                      className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : 'Create Draft'}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {creating && (
-              <div className="absolute inset-0 bg-surface-light/80 rounded-2xl flex items-center justify-center z-10">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span className="text-sm text-text-sub">Creating draft...</span>
-                </div>
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => !creating && setShowCreateModal(false)}>
+          <div className="bg-surface-light rounded-2xl shadow-2xl border border-border-subtle w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-text-heading mb-4">Create Case</h3>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1.5">Title *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. GST Notice – ABC Traders"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  autoFocus
+                />
               </div>
-            )}
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1.5">Description (optional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Brief context..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => !creating && setShowCreateModal(false)} className="flex-1 px-4 py-2.5 border border-border-default rounded-xl text-sm font-medium text-text-sub hover:bg-background-light">
+                  Cancel
+                </button>
+                <button type="submit" disabled={creating || !title.trim()} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark disabled:opacity-50 flex items-center justify-center gap-2">
+                  {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : 'Create'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -518,35 +240,58 @@ export default function WorkspacePage() {
   );
 }
 
-// Helpers
-function getCategoryColor(category: string): string {
-  const map: Record<string, string> = {
-    SCN_REPLY: 'bg-red-soft text-red-text',
-    APPEAL_MEMORANDUM: 'bg-blue-soft text-blue-text',
-    LEGAL_OPINION: 'bg-purple-soft text-purple-text',
-    GENERAL: 'bg-teal-soft text-teal-text',
-  };
-  return map[category] || 'bg-teal-soft text-teal-text';
-}
+function CaseCard({ caseItem, viewMode, onClick }: { caseItem: Case; viewMode: 'grid' | 'list'; onClick: () => void }) {
+  const docCount = caseItem._count?.documents ?? caseItem.documents?.length ?? 0;
+  const draftCount = caseItem._count?.drafts ?? caseItem.drafts?.length ?? 0;
+  const subtitle = caseItem.clientName || caseItem.description || 'Tax case';
 
-function getStatusBadge(status: string): string {
-  const map: Record<string, string> = {
-    DRAFT: 'bg-background-light text-text-sub border-border-subtle',
-    IN_REVIEW: 'bg-blue-soft text-blue-text border-blue-text/20',
-    APPROVED: 'bg-green-soft text-green-text border-green-text/20',
-    EXPORTED: 'bg-purple-soft text-purple-text border-purple-text/20',
-  };
-  return map[status] || 'bg-background-light text-text-sub border-border-subtle';
-}
+  if (viewMode === 'list') {
+    return (
+      <button
+        onClick={onClick}
+        className="flex items-center gap-4 p-4 rounded-xl bg-white border border-border-default hover:border-primary/30 hover:shadow-sm transition-all text-left"
+      >
+        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+          <FolderOpen className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-text-heading truncate">{caseItem.title}</h4>
+          <p className="text-sm text-text-sub truncate">{subtitle}</p>
+          <p className="text-xs text-text-light mt-0.5">Edited {timeAgo(caseItem.updatedAt)}</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-text-light">
+          <span>{docCount} docs</span>
+          <span>{draftCount} drafts</span>
+        </div>
+      </button>
+    );
+  }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
+  return (
+    <button
+      onClick={onClick}
+      className="text-left bg-white rounded-xl border border-border-default hover:border-primary/30 hover:shadow-md transition-all p-5 group min-h-[180px] flex flex-col"
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20">
+          <FolderOpen className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-text-heading truncate">{caseItem.title}</h4>
+          <p className="text-sm text-text-sub truncate mt-0.5">{subtitle}</p>
+        </div>
+      </div>
+      <div className="mt-auto flex items-center justify-between">
+        <p className="text-xs text-text-light">Edited {timeAgo(caseItem.updatedAt)}</p>
+        <div className="flex items-center gap-2">
+          {docCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{docCount} docs</span>
+          )}
+          {draftCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{draftCount} drafts</span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
 }

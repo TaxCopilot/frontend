@@ -1,156 +1,251 @@
+"use client";
+
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { Search, BookOpen, Scale, Filter, Copy, ArrowRight } from 'lucide-react';
+import {
+  FolderOpen,
+  FileText,
+  Download,
+  ExternalLink,
+  Loader2,
+  File,
+  FileType,
+  ArrowLeft,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCases } from '@/hooks/useCases';
+import { caseService, Case, CaseDocument, CaseDraft } from '@/services/caseService';
+import { documentService } from '@/services/documentService';
+import { PageSkeleton } from '@/components/SkeletonLoader';
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function timeAgo(dateString: string) {
+  const d = new Date(dateString);
+  const now = new Date();
+  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (sec < 60) return 'Just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return 'Yesterday';
+  if (day < 7) return `${day}d ago`;
+  if (day < 30) return `${Math.floor(day / 7)}w ago`;
+  return d.toLocaleDateString();
+}
 
 export default function LibraryPage() {
-  const categories = [
-    { name: 'All Categories', active: true },
-    { name: 'GST Law', active: false },
-    { name: 'Income Tax', active: false },
-    { name: 'Corporate Law', active: false },
-    { name: 'Case Precedents', active: false },
-    { name: 'Notifications', active: false },
-  ];
+  const { cases, isLoading, fetchCases } = useCases();
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [caseDetail, setCaseDetail] = useState<Case | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const router = useRouter();
 
-  const results = [
-    {
-      category: 'GST Law',
-      categoryColor: 'bg-primary/10 text-primary',
-      section: 'Section 29(2)(c)',
-      title: 'Cancellation or Suspension of Registration',
-      description: 'The proper officer may cancel the registration of a person from such date as he may deem fit, where a registered person has not furnished returns for a continuous period of six months.',
-      tags: ['CGST Act 2017', 'Registration', 'Non-Compliance'],
-      accent: 'border-l-primary',
-    },
-    {
-      category: 'Case Law',
-      categoryColor: 'bg-blue-soft text-blue-text',
-      section: 'Madras HC • 2022',
-      title: 'TVL. Suguna Cutpiece Center vs. The Appellate Deputy Commissioner',
-      description: 'The High Court held that cancellation of GST registration for non-filing of returns is a drastic measure. Authorities must consider reasons and provide opportunity before cancellation.',
-      tags: ['Section 29', 'Natural Justice', 'Cancellation'],
-      accent: 'border-l-blue-text',
-    },
-    {
-      category: 'Income Tax',
-      categoryColor: 'bg-purple-soft text-purple-text',
-      section: 'Section 148A',
-      title: 'Conducting Inquiry Before Issue of Notice Under Section 148',
-      description: 'The Assessing Officer shall conduct an inquiry with the prior approval of the specified authority, before issuing a notice under section 148.',
-      tags: ['IT Act', 'Reassessment', 'Notice'],
-      accent: 'border-l-purple-text',
-    },
-    {
-      category: 'Case Law',
-      categoryColor: 'bg-blue-soft text-blue-text',
-      section: 'Delhi HC • 2023',
-      title: 'Rishi Enterprises vs. Commissioner of Central Tax',
-      description: 'A vague SCN lacking specific details deprives the taxpayer of a reasonable opportunity to respond, violating principles of natural justice. The cancellation order was set aside.',
-      tags: ['Section 29', 'Defective SCN', 'Natural Justice'],
-      accent: 'border-l-blue-text',
-    },
-    {
-      category: 'Notification',
-      categoryColor: 'bg-orange-soft text-orange-text',
-      section: 'Circular No. 183/15/2022',
-      title: 'GST Clarification on Provisions Relating to E-Commerce',
-      description: 'Clarifications on registration and compliance requirements for persons supplying goods through an electronic commerce operator under Section 9(5) of the CGST Act.',
-      tags: ['E-Commerce', 'GST', 'Circular'],
-      accent: 'border-l-orange-text',
-    },
-  ];
+  useEffect(() => {
+    fetchCases();
+  }, [fetchCases]);
+
+  useEffect(() => {
+    if (!selectedCase) {
+      setCaseDetail(null);
+      return;
+    }
+    setLoadingDetail(true);
+    caseService
+      .getById(selectedCase.id)
+      .then(setCaseDetail)
+      .finally(() => setLoadingDetail(false));
+  }, [selectedCase]);
+
+  const filteredCases = cases.filter(
+    (c) =>
+      !searchTerm ||
+      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.clientName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDownload = async (doc: CaseDocument) => {
+    setDownloading(doc.id);
+    try {
+      const { url, filename } = await documentService.getDownloadUrl(doc.id);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      // ignore
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const documents = caseDetail?.documents ?? [];
+  const drafts = caseDetail?.drafts ?? [];
 
   return (
     <>
-      <Header title="Law Library" subtitle="Search across judgments, acts, and circulars" />
-      <div className="flex-1 overflow-y-auto px-8 lg:px-12 py-8 bg-background-light scrollbar-thin">
-        <div className="max-w-5xl mx-auto">
-
-          {/* Search Bar */}
-          <div className="bg-surface-light rounded-2xl p-3 shadow-card border border-border-subtle mb-6 flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-light" />
-              <input
-                type="text"
-                placeholder="Search for case laws, sections, or keywords..."
-                className="w-full bg-background-light border-none rounded-xl py-3 pl-12 pr-4 text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder-text-light"
-              />
-            </div>
-            <div className="hidden sm:flex items-center gap-1 bg-background-light border border-border-subtle rounded-lg px-2 py-1.5 text-[11px] text-text-light font-mono">
-              ⌘K
-            </div>
-            <button className="bg-primary hover:bg-primary-dark text-surface-light px-5 py-3 rounded-xl font-medium shadow-sm transition-colors text-sm">
-              Search
-            </button>
-          </div>
-
-          {/* Category Pills */}
-          <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-2">
-            {categories.map((cat) => (
+      <Header title="Library" subtitle="Your cases" onSearch={setSearchTerm} searchValue={searchTerm} searchPlaceholder="Search cases..." />
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8 scrollbar-thin">
+        <div className="max-w-6xl mx-auto">
+          {!selectedCase ? (
+            <>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : filteredCases.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-border-default">
+                  <FolderOpen className="w-16 h-16 text-text-light mb-4" />
+                  <p className="text-text-sub text-sm">{searchTerm ? 'No cases match' : 'No cases yet'}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCases.map((c) => (
+                    <CaseCard key={c.id} caseItem={c} onClick={() => setSelectedCase(c)} />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
               <button
-                key={cat.name}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  cat.active
-                    ? 'bg-primary text-surface-light shadow-sm'
-                    : 'bg-surface-light text-text-sub border border-border-default hover:border-primary/50 hover:text-primary'
-                }`}
+                onClick={() => setSelectedCase(null)}
+                className="flex items-center gap-2 text-sm text-text-sub hover:text-primary mb-6"
               >
-                {cat.name}
+                <ArrowLeft className="w-4 h-4" />
+                Back to cases
               </button>
-            ))}
-            <div className="w-px h-7 bg-border-default mx-1 flex-shrink-0" />
-            <button className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium text-text-sub bg-surface-light border border-border-default hover:border-primary/50 hover:text-primary transition-all">
-              <Filter className="w-4 h-4" /> All Filters
-            </button>
-          </div>
-
-          {/* Results Count */}
-          <div className="flex items-center justify-between mb-5">
-            <span className="text-sm text-text-sub">Showing <strong className="text-text-heading">{results.length}</strong> results</span>
-            <select className="bg-transparent border-none text-sm font-medium text-text-sub focus:ring-0 cursor-pointer">
-              <option>Relevance</option>
-              <option>Date (Newest)</option>
-              <option>Date (Oldest)</option>
-            </select>
-          </div>
-
-          {/* Result Cards */}
-          <div className="space-y-4">
-            {results.map((result, index) => (
-              <div
-                key={index}
-                className={`bg-surface-light border border-border-default rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all cursor-pointer group border-l-4 ${result.accent}`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wide ${result.categoryColor}`}>{result.category}</span>
-                    <span className="text-sm text-text-light">{result.section}</span>
-                  </div>
-                  <button className="text-text-light hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
-                    <BookOpen className="w-5 h-5" />
-                  </button>
+              {loadingDetail ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-                <h3 className="text-lg font-serif text-text-heading mb-2 group-hover:text-primary transition-colors leading-snug">{result.title}</h3>
-                <p className="text-text-sub text-sm leading-relaxed mb-4 line-clamp-2">{result.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {result.tags.map((tag) => (
-                      <span key={tag} className="bg-background-light text-text-light text-xs px-2.5 py-1 rounded-md border border-border-subtle font-medium">#{tag}</span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="text-xs font-medium text-text-sub bg-background-light border border-border-default px-3 py-1.5 rounded-lg hover:text-primary hover:border-primary/50 transition-all flex items-center gap-1.5">
-                      <Copy className="w-3 h-3" /> Copy
-                    </button>
-                    <button className="text-xs font-bold text-secondary-text bg-secondary hover:bg-secondary-hover px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
-                      Insert <ArrowRight className="w-3 h-3" />
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between gap-4 mb-8">
+                    <h2 className="text-xl font-semibold text-text-heading">{caseDetail?.title}</h2>
+                    <button
+                      onClick={() => router.push(`/workspace/case/${selectedCase?.id}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark"
+                    >
+                      Open case <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <section className="bg-white rounded-xl border border-border-default shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <h3 className="font-semibold text-text-heading">Documents</h3>
+                      </div>
+                      <div className="divide-y divide-border-subtle">
+                        {documents.length === 0 ? (
+                          <div className="px-5 py-12 text-center">
+                            <File className="w-10 h-10 text-text-light mx-auto mb-2" />
+                            <p className="text-sm text-text-light">No documents</p>
+                          </div>
+                        ) : (
+                          documents.map((doc) => (
+                            <div key={doc.id} className="flex items-center gap-4 px-5 py-4 hover:bg-background-light/50">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <FileType className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-text-heading truncate">{doc.filename}</p>
+                                <p className="text-xs text-text-light">{formatBytes(doc.sizeBytes)} · {timeAgo(doc.createdAt)}</p>
+                              </div>
+                              <button
+                                onClick={() => handleDownload(doc)}
+                                disabled={downloading === doc.id}
+                                className="p-2 rounded-lg text-text-light hover:text-primary hover:bg-primary/5"
+                                title="Download"
+                              >
+                                {downloading === doc.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </section>
+                    <section className="bg-white rounded-xl border border-border-default shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <h3 className="font-semibold text-text-heading">Drafts</h3>
+                      </div>
+                      <div className="divide-y divide-border-subtle">
+                        {drafts.length === 0 ? (
+                          <div className="px-5 py-12 text-center">
+                            <FileText className="w-10 h-10 text-text-light mx-auto mb-2" />
+                            <p className="text-sm text-text-light">No drafts</p>
+                          </div>
+                        ) : (
+                          drafts.map((d) => (
+                            <button
+                              key={d.id}
+                              onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
+                              className="w-full flex items-center gap-4 px-5 py-4 hover:bg-background-light/50 text-left"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-text-heading truncate">{d.title}</p>
+                                <p className="text-xs text-text-light">{d.category.replace('_', ' ')} · {timeAgo(d.updatedAt)}</p>
+                              </div>
+                              <ExternalLink className="w-4 h-4 text-text-light flex-shrink-0" />
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </section>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </>
+  );
+}
+
+function CaseCard({ caseItem, onClick }: { caseItem: Case; onClick: () => void }) {
+  const docCount = caseItem._count?.documents ?? caseItem.documents?.length ?? 0;
+  const draftCount = caseItem._count?.drafts ?? caseItem.drafts?.length ?? 0;
+  const subtitle = caseItem.clientName || caseItem.description || 'Tax case';
+
+  return (
+    <button
+      onClick={onClick}
+      className="text-left bg-white rounded-xl border border-border-default hover:border-primary/30 hover:shadow-md transition-all p-5 group min-h-[180px] flex flex-col"
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20">
+          <FolderOpen className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-text-heading truncate">{caseItem.title}</h4>
+          <p className="text-sm text-text-sub truncate mt-0.5">{subtitle}</p>
+        </div>
+      </div>
+      <div className="mt-auto flex items-center justify-between">
+        <p className="text-xs text-text-light">Edited {timeAgo(caseItem.updatedAt)}</p>
+        <div className="flex items-center gap-2">
+          {docCount > 0 && <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{docCount} docs</span>}
+          {draftCount > 0 && <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{draftCount} drafts</span>}
+        </div>
+      </div>
+    </button>
   );
 }
