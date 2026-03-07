@@ -9,7 +9,9 @@ export interface User {
   provider: string;
   phone?: string;
   registrationId?: string;
+  createdAt?: string;
 }
+
 
 export interface AuthResponse {
   message: string;
@@ -29,7 +31,7 @@ export const authService = {
   },
 
   getGoogleAuthUrl(): string {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
     return `${baseUrl}/api/auth/google`;
   },
 

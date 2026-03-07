@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { 
-  FileText, 
-  Download, 
-  Trash2, 
-  Search, 
-  Loader2, 
+import {
+  FileText,
+  Download,
+  Trash2,
+  Search,
+  Loader2,
   MoreVertical,
   Eye,
   MessageSquare,
@@ -128,14 +128,14 @@ export default function DocumentsPage() {
 
   return (
     <>
-      <Header 
-        title="Documents" 
+      <Header
+        title="Documents"
         subtitle="View and manage your uploaded files"
       />
-      
+
       <div className="flex-1 overflow-y-auto px-8 lg:px-12 py-8 bg-background-light scrollbar-thin">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-surface-light border border-border-default rounded-xl p-5">
@@ -149,7 +149,7 @@ export default function DocumentsPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-surface-light border border-border-default rounded-xl p-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
@@ -161,7 +161,7 @@ export default function DocumentsPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-surface-light border border-border-default rounded-xl p-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-soft rounded-lg flex items-center justify-center">
@@ -190,36 +190,33 @@ export default function DocumentsPage() {
                   className="w-full pl-10 pr-4 py-2.5 bg-background-light border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <span className="text-sm text-text-sub">Sort by:</span>
                 <button
                   onClick={() => toggleSort('createdAt')}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                    sortField === 'createdAt' 
-                      ? 'bg-primary/10 border-primary/30 text-primary' 
-                      : 'border-border-default text-text-sub hover:bg-background-light'
-                  }`}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${sortField === 'createdAt'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'border-border-default text-text-sub hover:bg-background-light'
+                    }`}
                 >
                   Date {sortField === 'createdAt' && (sortOrder === 'asc' ? <SortAsc className="inline w-3 h-3 ml-1" /> : <SortDesc className="inline w-3 h-3 ml-1" />)}
                 </button>
                 <button
                   onClick={() => toggleSort('filename')}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                    sortField === 'filename' 
-                      ? 'bg-primary/10 border-primary/30 text-primary' 
-                      : 'border-border-default text-text-sub hover:bg-background-light'
-                  }`}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${sortField === 'filename'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'border-border-default text-text-sub hover:bg-background-light'
+                    }`}
                 >
                   Name {sortField === 'filename' && (sortOrder === 'asc' ? <SortAsc className="inline w-3 h-3 ml-1" /> : <SortDesc className="inline w-3 h-3 ml-1" />)}
                 </button>
                 <button
                   onClick={() => toggleSort('sizeBytes')}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                    sortField === 'sizeBytes' 
-                      ? 'bg-primary/10 border-primary/30 text-primary' 
-                      : 'border-border-default text-text-sub hover:bg-background-light'
-                  }`}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${sortField === 'sizeBytes'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'border-border-default text-text-sub hover:bg-background-light'
+                    }`}
                 >
                   Size {sortField === 'sizeBytes' && (sortOrder === 'asc' ? <SortAsc className="inline w-3 h-3 ml-1" /> : <SortDesc className="inline w-3 h-3 ml-1" />)}
                 </button>
@@ -254,7 +251,7 @@ export default function DocumentsPage() {
                 {!searchQuery && (
                   <button
                     onClick={() => router.push('/workspace/intake')}
-                    className="bg-primary hover:bg-primary-hover text-primary-text px-6 py-2.5 rounded-xl font-medium transition-all"
+                    className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-xl font-medium transition-all"
                   >
                     Upload Document
                   </button>
@@ -272,19 +269,27 @@ export default function DocumentsPage() {
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
                   {filteredFiles.map((file) => (
-                    <tr 
-                      key={file.id} 
+                    <tr
+                      key={file.id}
                       className="hover:bg-background-light/50 transition-colors group"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFileIcon(file.mimeType)}`}>
+                          <button
+                            onClick={() => router.push(`/workspace/chat?docId=${file.id}`)}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-75 ${getFileIcon(file.mimeType)}`}
+                            title="Open in Agentic Analysis"
+                          >
                             <FileText className="w-5 h-5" />
-                          </div>
+                          </button>
                           <div className="min-w-0">
-                            <p className="font-medium text-text-heading truncate max-w-[300px]">
+                            <button
+                              onClick={() => router.push(`/workspace/chat?docId=${file.id}`)}
+                              className="font-medium text-text-heading truncate max-w-[300px] hover:text-primary transition-colors text-left"
+                              title="Open in Agentic Analysis"
+                            >
                               {file.filename}
-                            </p>
+                            </button>
                             <p className="text-xs text-text-light md:hidden">
                               {formatSize(file.sizeBytes)} • {formatDate(file.createdAt)}
                             </p>
