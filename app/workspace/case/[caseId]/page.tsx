@@ -171,11 +171,11 @@ export default function CaseChatPage() {
     );
   };
 
-  if (isLoading && !caseData) {
+  if (!caseData) {
     return (
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-background-light">
         <div className="p-8">
-          <PageSkeleton />
+          {isLoading ? <PageSkeleton /> : <div className="text-text-sub">Case not found.</div>}
         </div>
       </div>
     );
