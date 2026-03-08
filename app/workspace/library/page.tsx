@@ -12,7 +12,12 @@ import {
   ArrowLeft,
   Search,
   Plus,
-  ChevronDown
+  ChevronDown,
+  MoreHorizontal,
+  Pencil,
+  Trash,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCases } from '@/hooks/useCases';
@@ -53,6 +58,12 @@ export default function LibraryPage() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'activity' | 'name'>('activity');
   const router = useRouter();
+
+  // Modals / Menu State
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [renameCase, setRenameCase] = useState<Case | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+  const [deleteCase, setDeleteCase] = useState<Case | null>(null);
 
   useEffect(() => {
     fetchCases();
@@ -108,7 +119,7 @@ export default function LibraryPage() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-10 scrollbar-thin bg-surface-light">
+      <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-10 scrollbar-thin bg-[#FAF9F5]">
         <div className="max-w-5xl mx-auto">
           {!selectedCase ? (
             <div className="flex flex-col gap-6">
@@ -180,7 +191,17 @@ export default function LibraryPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                   {filteredCases.map((c) => (
-                    <CaseCard key={c.id} caseItem={c} onClick={() => setSelectedCase(c)} />
+                    <CaseCard 
+                      key={c.id} 
+                      caseItem={c} 
+                      onClick={() => setSelectedCase(c)}
+                      menuOpen={menuOpenId === c.id}
+                      onToggleMenu={() => setMenuOpenId(menuOpenId === c.id ? null : c.id)}
+                      onRename={() => { setRenameCase(c); setRenameInput(c.title); setMenuOpenId(null); }}
+                      onTrash={() => { setDeleteCase(c); setMenuOpenId(null); }}
+                      onView={() => { setSelectedCase(c); setMenuOpenId(null); }}
+                      onOpen={() => { router.push(`/workspace/case/${c.id}`); setMenuOpenId(null); }}
+                    />
                   ))}
                 </div>
               )}
@@ -284,6 +305,89 @@ export default function LibraryPage() {
         </div>
       </div>
 
+      {renameCase && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-4">Rename Case</h3>
+            <input
+              autoFocus
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && renameInput.trim()) {
+                  try {
+                    await caseService.update(renameCase.id, { title: renameInput.trim() });
+                    await fetchCases();
+                    if (selectedCase?.id === renameCase.id) {
+                      setCaseDetail(prev => prev ? { ...prev, title: renameInput.trim() } : null);
+                    }
+                    setRenameCase(null);
+                  } catch(err) { console.error(err); }
+                }
+                if (e.key === 'Escape') setRenameCase(null);
+              }}
+              className="w-full bg-background-light border border-border-default rounded-xl py-2 px-3 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all mb-4"
+              placeholder="Case Name"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setRenameCase(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!renameInput.trim()) return;
+                  try {
+                    await caseService.update(renameCase.id, { title: renameInput.trim() });
+                    await fetchCases();
+                    if (selectedCase?.id === renameCase.id) {
+                      setCaseDetail(prev => prev ? { ...prev, title: renameInput.trim() } : null);
+                    }
+                    setRenameCase(null);
+                  } catch(err) { console.error(err); }
+                }}
+                disabled={!renameInput.trim()}
+                className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary-dark rounded-xl transition-colors disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteCase && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-2">Move to Trash</h3>
+            <p className="text-sm text-text-sub mb-6">Are you sure you want to move this case to trash?</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteCase(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await caseService.delete(deleteCase.id);
+                    await fetchCases();
+                    if (selectedCase?.id === deleteCase.id) setSelectedCase(null);
+                    setDeleteCase(null);
+                  } catch(err) { console.error(err); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Delete Case
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <CreateCaseModal 
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -296,20 +400,73 @@ export default function LibraryPage() {
   );
 }
 
-function CaseCard({ caseItem, onClick }: { caseItem: Case; onClick: () => void }) {
+function CaseCard({ 
+  caseItem, 
+  onClick,
+  menuOpen,
+  onToggleMenu,
+  onRename,
+  onTrash,
+  onView,
+  onOpen
+}: { 
+  caseItem: Case; 
+  onClick: () => void;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+  onRename: () => void;
+  onTrash: () => void;
+  onView: () => void;
+  onOpen: () => void;
+}) {
+  const renderMenu = () => {
+    if (!menuOpen) return null;
+    return (
+      <>
+        <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); onToggleMenu(); }} />
+        <div className="absolute right-0 top-8 mt-1 w-48 bg-white rounded-xl shadow-lg border border-border-default py-1 z-30" onClick={(e) => e.stopPropagation()}>
+          <button onClick={onView} className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-background-light flex items-center gap-2 transition-colors">
+            <Eye className="w-4 h-4" /> View Details
+          </button>
+          <button onClick={onOpen} className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-background-light flex items-center gap-2 transition-colors">
+            <ExternalLink className="w-4 h-4" /> Open Editor
+          </button>
+          <button onClick={onRename} className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-background-light flex items-center gap-2 transition-colors">
+            <Pencil className="w-4 h-4" /> Rename
+          </button>
+          <div className="h-px bg-border-subtle my-1"></div>
+          <button onClick={onTrash} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        </div>
+      </>
+    );
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className="text-left bg-white rounded-2xl border border-border-default hover:border-primary/50 hover:shadow-md transition-all px-6 py-5 group min-h-[140px] flex flex-col justify-between overflow-hidden relative"
-    >
-      <div className="w-full">
-        <h4 className="font-medium text-[15px] text-text-heading truncate mb-1">{caseItem.title}</h4>
+    <div className="relative group/card">
+      <button
+        onClick={onClick}
+        className="w-full text-left bg-white rounded-2xl border border-border-default hover:border-primary/50 hover:shadow-md transition-all px-6 py-5 min-h-[140px] flex flex-col justify-between overflow-hidden"
+      >
+        <div className="w-full pr-6">
+          <h4 className="font-medium text-[15px] text-text-heading truncate mb-1">{caseItem.title}</h4>
+        </div>
+        <div>
+          <p className="text-[13px] text-text-sub">Updated {timeAgo(caseItem.updatedAt)}</p>
+        </div>
+        {/* Subtle hover gradient effect on the bottom edge to make it look premium */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover/card:via-primary/30 transition-all opacity-0 group-hover/card:opacity-100" />
+      </button>
+      <div className="absolute right-3 top-4">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onToggleMenu(); }}
+          className={`p-1.5 rounded-lg text-text-sub hover:bg-background-light transition-colors ${menuOpen ? 'bg-background-light' : 'opacity-0 group-hover/card:opacity-100'}`}
+        >
+          <MoreHorizontal className="w-5 h-5" />
+        </button>
+        {renderMenu()}
       </div>
-      <div>
-        <p className="text-[13px] text-text-sub">Updated {timeAgo(caseItem.updatedAt)}</p>
-      </div>
-      {/* Subtle hover gradient effect on the bottom edge to make it look premium */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/30 transition-all opacity-0 group-hover:opacity-100" />
-    </button>
+    </div>
   );
 }

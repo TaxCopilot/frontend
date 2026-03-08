@@ -38,6 +38,8 @@ export default function TrashPage() {
   const [tab, setTab] = useState<Tab>('cases');
   const [caseTrash, setCaseTrash] = useState<Case[]>([]);
   const [caseTrashLoading, setCaseTrashLoading] = useState(false);
+  const [deleteCaseId, setDeleteCaseId] = useState<string | null>(null);
+  const [deleteDraftId, setDeleteDraftId] = useState<string | null>(null);
 
   const draftTrash = useDraftStore((s) => s.trash);
   const draftLoading = useDraftStore((s) => s.isLoading);
@@ -71,10 +73,7 @@ export default function TrashPage() {
   };
 
   const handleDeleteCase = async (id: string) => {
-    if (confirm('Are you sure you want to permanently delete this case? This cannot be undone.')) {
-      await caseService.permanentDelete(id);
-      setCaseTrash((prev) => prev.filter((c) => c.id !== id));
-    }
+    setDeleteCaseId(id);
   };
 
   const handleRestoreDraft = async (id: string) => {
@@ -82,9 +81,7 @@ export default function TrashPage() {
   };
 
   const handleDeleteDraft = async (id: string) => {
-    if (confirm('Are you sure you want to permanently delete this draft? This cannot be undone.')) {
-      await permanentDeleteDraft(id);
-    }
+    setDeleteDraftId(id);
   };
 
   const count = tab === 'cases' ? caseTrash.length : draftTrash.length;
@@ -229,6 +226,63 @@ export default function TrashPage() {
           )}
         </div>
       </div>
+
+      {deleteCaseId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-2">Delete Permanently</h3>
+            <p className="text-sm text-text-sub mb-6">Are you sure you want to permanently delete this case? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteCaseId(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await caseService.permanentDelete(deleteCaseId);
+                    setCaseTrash((prev) => prev.filter((c) => c.id !== deleteCaseId));
+                    setDeleteCaseId(null);
+                  } catch(err) { console.error(err); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteDraftId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-2">Delete Permanently</h3>
+            <p className="text-sm text-text-sub mb-6">Are you sure you want to permanently delete this draft? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteDraftId(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await permanentDeleteDraft(deleteDraftId);
+                    setDeleteDraftId(null);
+                  } catch(err) { console.error(err); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

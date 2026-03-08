@@ -9,15 +9,67 @@ import {
   Lock
 } from 'lucide-react';
 
+import { useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
+
 export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const ctaHref = isAuthenticated ? '/workspace' : '/login';
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const preloaderRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline();
+
+    // 1. Initial logo pulse/scale
+    tl.fromTo('.preloader-logo', 
+      { scale: 0.8, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.8, ease: 'back.out(1.5)' }
+    )
+    .to('.preloader-logo', { scale: 1.1, duration: 0.4, ease: 'power2.inOut', yoyo: true, repeat: 1 })
+    // 2. Preloader slides up and fades
+    .to(preloaderRef.current, {
+      yPercent: -100,
+      opacity: 0,
+      duration: 1.2,
+      ease: 'power4.inOut',
+      delay: 0.2
+    })
+    // 3. Stagger in navbar and hero elements
+    .fromTo('.reveal-el', 
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' },
+      "-=0.6" // overlap with preloader exit
+    );
+  }, { scope: containerRef });
 
   return (
-    <div className="min-h-screen bg-background-light font-sans text-text-main selection:bg-primary/20">
+    <div ref={containerRef} className="min-h-screen bg-background-light font-sans text-text-main selection:bg-primary/20 overflow-x-hidden">
+      
+      {/* ── PRELOADER ── */}
+      <div 
+        ref={preloaderRef} 
+        className="fixed inset-0 z-[100] bg-[#FAF9F5] flex flex-col items-center justify-center pointer-events-none"
+      >
+        <div className="preloader-logo flex items-center gap-4">
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center font-serif font-bold text-white text-3xl shadow-xl">
+            T
+          </div>
+          <span className="text-4xl font-serif font-bold tracking-tight text-text-heading">TaxCopilot</span>
+        </div>
+        <div className="absolute bottom-10 flex items-center gap-2 opacity-50">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+      </div>
 
       {/* ── NAV ── */}
-      <nav className="flex items-center justify-between px-6 lg:px-12 py-5 max-w-[1400px] mx-auto border-b border-border-subtle/50 mb-8 lg:mb-16">
+      <nav className="reveal-el opacity-0 flex items-center justify-between px-6 lg:px-12 py-5 max-w-[1400px] mx-auto border-b border-border-subtle/50 mb-8 lg:mb-16">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center font-serif font-bold text-white text-base shadow-sm">
             T
@@ -46,23 +98,23 @@ export default function LandingPage() {
       <section className="max-w-[1400px] mx-auto px-6 lg:px-12 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Left */}
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2.5 bg-secondary/15 border border-secondary/20 text-secondary-dark text-xs font-semibold px-4 py-1.5 rounded-full mb-8">
+          <div className="reveal-el opacity-0 inline-flex items-center gap-2.5 bg-secondary/15 border border-secondary/20 text-secondary-dark text-xs font-semibold px-4 py-1.5 rounded-full mb-8">
             <span className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
             <span className="tracking-wide">Enterprise Tax Intelligence</span>
           </div>
 
-          <h1 className="text-[56px] xl:text-[68px] font-serif font-bold leading-[1.05] text-text-heading mb-8 tracking-tight">
+          <h1 className="reveal-el opacity-0 text-[56px] xl:text-[68px] font-serif font-bold leading-[1.05] text-text-heading mb-8 tracking-tight">
             The Modern Way to<br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-dark">
               Resolve Tax Disputes
             </span>
           </h1>
 
-          <p className="text-xl text-text-sub leading-relaxed mb-10 max-w-lg">
+          <p className="reveal-el opacity-0 text-xl text-text-sub leading-relaxed mb-10 max-w-lg">
             Streamline your litigation workflow. Automatically analyze complex government notices, cross-reference the latest tax code, and draft professional legal responses in minutes.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 mb-12">
+          <div className="reveal-el opacity-0 flex flex-wrap items-center gap-4 mb-12">
             <Link
               href={ctaHref}
               className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-xl font-semibold text-base transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
@@ -74,7 +126,7 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-4 pt-6 border-t border-border-subtle max-w-md">
+          <div className="reveal-el opacity-0 flex items-center gap-4 pt-6 border-t border-border-subtle max-w-md">
             <div className="flex -space-x-3">
               {[Building2, Scale, FileText].map((Icon, i) => (
                 <div key={i} className="w-10 h-10 rounded-full border-[3px] border-background-light bg-surface-main flex items-center justify-center text-text-sub shadow-sm">
@@ -89,7 +141,7 @@ export default function LandingPage() {
         </div>
 
         {/* Right – App Mockup */}
-        <div className="relative lg:h-[600px] flex items-center justify-center">
+        <div className="reveal-el opacity-0 relative lg:h-[600px] flex items-center justify-center">
           {/* Decorative background blobs */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[80px] -z-10" />
           <div className="absolute top-1/4 -right-12 w-64 h-64 bg-secondary/15 rounded-full blur-[60px] -z-10" />

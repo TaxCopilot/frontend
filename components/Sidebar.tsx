@@ -82,13 +82,13 @@ export function Sidebar() {
   return (
     <aside
       className={`${collapsed ? 'w-[76px]' : 'w-[280px]'
-        } flex-shrink-0 bg-[#F9F4F8] border-r border-[#f3f4f6] flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative`}
+        } flex-shrink-0 bg-[#F8F7F3] border-r border-[#e6e4dc] flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative`}
     >
 
-      <div className={`bg-[#FCFBFE] transition-all duration-300 ${collapsed ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
+      <div className={`bg-transparent transition-all duration-300 ${collapsed ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
 
           {/* ── Dark Header ── */}
-          <div className={`${collapsed ? 'aspect-square justify-center rounded-[20px]' : 'h-[60px] px-4 justify-between rounded-2xl'} bg-[#235549] flex items-center flex-shrink-0 transition-all duration-300`}>
+          <div className={`${collapsed ? 'aspect-square justify-center rounded-[20px]' : 'h-[60px] px-4 justify-between rounded-2xl'} bg-primary flex items-center flex-shrink-0 transition-all duration-300`}>
             {!collapsed && (
               <Link href="/" className="flex items-center gap-3 group min-w-0">
                 <span className="font-semibold text-[17px] tracking-tight text-white/90 truncate">
@@ -133,15 +133,15 @@ export function Sidebar() {
 
       {/* ── Navigation List ── */}
       <div className={`flex-1 overflow-y-auto scrollbar-thin flex flex-col ${collapsed ? 'px-2' : 'px-3'}`}>
-        <div className={`flex flex-col gap-1 bg-[#FCFBFE] border border-transparent transition-all duration-300 ${collapsed ? 'rounded-[24px] p-1.5' : 'rounded-2xl'}`}>
+        <div className={`flex flex-col gap-1 bg-transparent border border-transparent transition-all duration-300 ${collapsed ? 'rounded-[24px] p-1.5' : 'rounded-2xl'}`}>
           {navItems.map((item, i) => {
             const active = isActive(item.href);
             return (
-              <div key={item.href} className={`bg-[#FFFFFF] transition-all duration-300 ${collapsed ? 'rounded-[20px] mb-1.5 relative group' : 'm-1 rounded-2xl'}`}>
+              <div key={item.href} className={`transition-all duration-300 ${collapsed ? 'rounded-[20px] mb-1.5 relative group' : 'm-1 rounded-2xl'}`}>
                 <Link
                   href={item.href}
                   title={collapsed ? item.name : undefined}
-                  className={`flex items-center gap-4 transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'}`}
+                  className={`flex items-center gap-4 transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'} ${active ? 'bg-[#F9F8F4]' : 'hover:bg-[#F9F8F4]'} `}
                 >
                   <item.icon className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} ${active ? 'text-primary' : 'text-text-sub group-hover:text-primary'} transition-all`} strokeWidth={active ? 2.5 : 2} />
                   {!collapsed && (

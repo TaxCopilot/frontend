@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Primary: Dark Teal Green ── */
-  --color-primary: #2d6b5e;
-  --color-primary-dark: #235549;
-  --color-primary-light: #4a8f7f;
+  /* ── Primary: Dark Gray / Black ── */
+  --color-primary: #292928;
+  --color-primary-dark: #000000;
+  --color-primary-light: #525251;
 
   /* ── Secondary: Warm Peach (kept for contrast highlights) ── */
   --color-secondary: #f08c6e;
@@ -13,23 +13,23 @@
   --color-secondary-text: #7a2e0e;
 
   /* ── Backgrounds ── */
-  --color-aqua-tint: #f0f7f5;
-  --color-aqua-light: #daeee9;
-  --color-background-light: #f4f5f7;
+  --color-aqua-tint: #FAF9F5;
+  --color-aqua-light: #F0EEE6;
+  --color-background-light: #FAF9F5;
   --color-surface-light: #ffffff;
-  --color-sidebar-bg: #f8faf9;
-  --color-active-bg: #e8f4f1;
+  --color-sidebar-bg: #FAF9F5;
+  --color-active-bg: #F0EEE6;
 
   /* ── Text ── */
-  --color-text-main: #1a1a2e;
-  --color-text-sub: #4b5563;
-  --color-text-light: #9ca3af;
-  --color-text-heading: #1a1a2e;
+  --color-text-main: #292928;
+  --color-text-sub: #525251;
+  --color-text-light: #8e8e8c;
+  --color-text-heading: #292928;
 
   /* ── Borders ── */
-  --color-border-subtle: #eef2f1;
-  --color-border-default: #d1dbd8;
-  --color-border-light: #e5ecea;
+  --color-border-subtle: #F0EEE6;
+  --color-border-default: #e6e4dc;
+  --color-border-light: #FAF9F5;
 
   /* ── Status Colors ── */
   --color-red-soft: #fef2f2;

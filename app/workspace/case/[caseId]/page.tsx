@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import {
   Bot, Send, FileText, Loader2, Upload, ChevronRight, FileStack,
-  MessageSquare, MessageCircle, Search, Sparkles,
+  MessageSquare, MessageCircle, Search, Sparkles, MoreVertical, Pencil, Trash
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -17,6 +17,7 @@ import type { NoticeResponse } from '@/services/chatService';
 import { PageSkeleton } from '@/components/SkeletonLoader';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 type ChatMode = 'chat' | 'analysis' | 'draft';
 
@@ -129,8 +130,14 @@ const renderMessageContent = (content: string, router: ReturnType<typeof useRout
   }
   
   return (
-    <div className="prose prose-sm prose-p:leading-relaxed prose-a:text-primary max-w-none break-words">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+    <div className="prose prose-sm prose-p:leading-relaxed prose-p:my-2 prose-a:text-primary max-w-none break-words">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+          br: () => <div className="h-3" />
+        }}
+      >
         {content}
       </ReactMarkdown>
     </div>
@@ -151,6 +158,28 @@ export default function CaseChatPage() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [caseMenuOpen, setCaseMenuOpen] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(280);
+  const [draftMenuOpen, setDraftMenuOpen] = useState<string | null>(null);
+  const [renameDraftId, setRenameDraftId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+  const [deleteDraftId, setDeleteDraftId] = useState<string | null>(null);
+
+  const startLeftDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = leftPanelWidth;
+    const onMove = (mv: MouseEvent) => {
+      const delta = mv.clientX - startX;
+      const next = Math.min(600, Math.max(200, startWidth + delta));
+      setLeftPanelWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -346,10 +375,11 @@ export default function CaseChatPage() {
 
   if (isLoading || !caseData) {
     return (
-      <>
-        <Header title="Case" subtitle="Loading..." />
-        <PageSkeleton />
-      </>
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background-light">
+        <div className="p-8">
+          <PageSkeleton />
+        </div>
+      </div>
     );
   }
 
@@ -357,11 +387,10 @@ export default function CaseChatPage() {
 
   return (
     <>
-      <Header title={caseData.title} subtitle={caseData.clientName || 'Chat & analysis'} />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden h-full bg-background-light">
 
         {/* ── Side Panel ── */}
-        <aside className="w-[280px] border-r border-border-default bg-sidebar-bg flex flex-col flex-shrink-0">
+        <aside style={{ width: leftPanelWidth }} className="border-r border-border-default bg-sidebar-bg flex flex-col flex-shrink-0 z-10 relative">
           {/* Case selector */}
           <div className="p-4 border-b border-border-default" ref={caseMenuRef}>
             <button
@@ -443,20 +472,66 @@ export default function CaseChatPage() {
                   </p>
                 ) : (
                   drafts.map((d) => (
-                    <button
-                      key={d.id}
-                      onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
-                      className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-sm truncate hover:bg-active-bg hover:text-primary text-text-sub border border-transparent hover:border-border-default transition-all"
-                    >
-                      <FileText className="w-4 h-4 flex-shrink-0" />
-                      {d.title}
-                    </button>
+                    <div key={d.id} className="group relative flex items-center justify-between w-full rounded-lg text-sm hover:bg-active-bg border border-transparent hover:border-border-default transition-all bg-background-light">
+                      <button
+                        onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
+                        className="flex-1 flex items-center gap-2.5 text-left px-3 py-2.5 truncate text-text-sub hover:text-primary transition-colors min-w-0"
+                      >
+                        <FileText className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{d.title}</span>
+                      </button>
+                      <div className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDraftMenuOpen(draftMenuOpen === d.id ? null : d.id); }}
+                          className="p-1.5 text-text-light hover:text-text-heading hover:bg-white rounded-md transition-colors"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                        {draftMenuOpen === d.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setDraftMenuOpen(null); }} />
+                            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-float border border-border-default py-1 z-30">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDraftMenuOpen(null);
+                                  setRenameDraftId(d.id);
+                                  setRenameInput(d.title);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-text-heading hover:bg-background-light flex items-center gap-2 transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" /> Rename
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDraftMenuOpen(null);
+                                  setDeleteDraftId(d.id);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                              >
+                                <Trash className="w-3 h-3" /> Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
             </section>
           </div>
         </aside>
+
+        {/* Drag handle */}
+        <div
+          onMouseDown={startLeftDrag}
+          className="hidden xl:flex w-1.5 flex-shrink-0 cursor-col-resize group items-center justify-center hover:bg-primary/10 transition-colors z-10 relative -ml-1 border-r border-transparent"
+          title="Drag to resize"
+        >
+          <div className="w-0.5 h-8 rounded-full bg-border-default group-hover:bg-primary/40 transition-colors" />
+        </div>
 
         {/* ── Main Chat ── */}
         <main className="flex-1 flex flex-col bg-background-light min-w-0 relative">
@@ -497,21 +572,17 @@ export default function CaseChatPage() {
               </div>
             ) : (
               messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border ${
-                    msg.role === 'user' ? 'bg-primary text-white border-primary' : 'bg-white border-border-default'
-                  }`}>
-                    {msg.role === 'user'
-                      ? <span className="text-xs font-bold">{user?.name?.[0] || 'U'}</span>
-                      : <Bot className="w-4 h-4 text-primary" />
-                    }
-                  </div>
-                  <div className={`flex flex-col gap-1 min-w-0 flex-1 ${msg.role === 'user' ? 'items-end' : ''}`}>
-                    <span className="text-[11px] text-text-light px-1">{formatTime(msg.timestamp)}</span>
-                    <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm ${
+                <div key={msg.id} className={`flex gap-4 max-w-3xl mx-auto w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 bg-white border border-border-default text-text-heading shadow-sm">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                  )}
+                  <div className={`flex flex-col gap-1 min-w-0 ${msg.role === 'user' ? 'max-w-[85%]' : 'flex-1 pr-8'}`}>
+                    <div className={`text-[15px] leading-relaxed text-text-heading ${
                       msg.role === 'user'
-                        ? 'bg-primary text-white rounded-tr-sm'
-                        : 'bg-white border border-border-default rounded-tl-sm'
+                        ? 'bg-[#F0EEE7] px-5 py-3 rounded-[24px] rounded-tr-[8px]'
+                        : 'pt-1.5'
                     }`}>
                       {renderMessageContent(msg.content, router, drafts)}
                     </div>
@@ -599,6 +670,82 @@ export default function CaseChatPage() {
 
         </main>
       </div>
+
+      {renameDraftId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-4">Rename Draft</h3>
+            <input
+              autoFocus
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && renameInput.trim()) {
+                  try {
+                    await draftService.updateDraft(renameDraftId, { title: renameInput.trim() });
+                    await fetchCase();
+                    setRenameDraftId(null);
+                  } catch(err) { console.error(err); }
+                }
+                if (e.key === 'Escape') setRenameDraftId(null);
+              }}
+              className="w-full bg-background-light border border-border-default rounded-xl py-2 px-3 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all mb-4"
+              placeholder="Draft Name"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setRenameDraftId(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!renameInput.trim()) return;
+                  try {
+                    await draftService.updateDraft(renameDraftId, { title: renameInput.trim() });
+                    await fetchCase();
+                    setRenameDraftId(null);
+                  } catch(err) { console.error(err); }
+                }}
+                disabled={!renameInput.trim()}
+                className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary-dark rounded-xl transition-colors disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteDraftId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-2">Delete Draft</h3>
+            <p className="text-sm text-text-sub mb-6">Are you sure you want to delete this draft? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteDraftId(null)}
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await draftService.trashDraft(deleteDraftId);
+                    await fetchCase();
+                    setDeleteDraftId(null);
+                  } catch(err) { console.error(err); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -7,7 +7,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Save, Download, Sparkles, Bot, Languages, Wand2, Type, GraduationCap, BookCheck, RotateCcw, ChevronRight, Send, Upload, FileText, Loader2 } from 'lucide-react';
+import { PaginationPlus, PAGE_SIZES } from 'tiptap-pagination-plus';
+import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Save, Download, Sparkles, Bot, Languages, Wand2, Type, GraduationCap, BookCheck, RotateCcw, ChevronRight, Send, Upload, FileText, Loader2, Heading1, Heading2, Heading3 } from 'lucide-react';
 import { useDraftStore } from '@/stores/draftStore';
 import { draftService } from '@/services/draftService';
 import { documentService } from '@/services/documentService';
@@ -73,11 +74,25 @@ function EditorPageInner() {
       StarterKit,
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      PaginationPlus.configure({
+        pageHeight: 1123,
+        pageWidth: 794,
+        pageGap: 24,
+        pageGapBorderSize: 1,
+        pageGapBorderColor: "#e6e4dc",
+        pageBreakBackground: "transparent",
+        marginTop: 48,
+        marginBottom: 48,
+        marginLeft: 48,
+        marginRight: 48,
+        contentMarginTop: 10,
+        contentMarginBottom: 10,
+      }),
     ],
     content: '<p>Loading...</p>',
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-3xl mx-auto font-serif text-text-heading leading-relaxed focus:outline-none min-h-[60vh] p-12',
+        class: 'prose prose-p:mb-4 prose-p:leading-relaxed prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl font-sans text-text-heading focus:outline-none min-h-[60vh] mx-auto',
       },
     },
     onUpdate: () => {
@@ -95,7 +110,11 @@ function EditorPageInner() {
   // Set editor content when draft loads
   useEffect(() => {
     if (currentDraft && editor) {
-      editor.commands.setContent(currentDraft.content || '<p>Start writing...</p>');
+      let rawContent = currentDraft.content || '<p>Start writing...</p>';
+      if (rawContent !== '<p>Start writing...</p>' && !/<[a-z][\s\S]*>/i.test(rawContent)) {
+        rawContent = rawContent.split(/\n\s*\n/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+      }
+      editor.commands.setContent(rawContent);
     }
   }, [currentDraft, editor]);
 
@@ -158,7 +177,6 @@ function EditorPageInner() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Document Editor" subtitle={currentDraft?.title || 'Loading...'} />
 
       <div className="flex-1 flex overflow-hidden bg-background-light">
         {/* Main Editor Area */}
@@ -171,6 +189,10 @@ function EditorPageInner() {
                 <button onClick={() => editor.chain().focus().toggleBold().run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('bold') ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><Bold className="w-4 h-4" /></button>
                 <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('italic') ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><Italic className="w-4 h-4" /></button>
                 <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('underline') ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><UnderlineIcon className="w-4 h-4" /></button>
+                <div className="w-px h-6 bg-border-default mx-2" />
+                <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><Heading1 className="w-4 h-4" /></button>
+                <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><Heading2 className="w-4 h-4" /></button>
+                <button onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`p-2 rounded-lg transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><Heading3 className="w-4 h-4" /></button>
                 <div className="w-px h-6 bg-border-default mx-2" />
                 <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`p-2 rounded-lg transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><AlignLeft className="w-4 h-4" /></button>
                 <button onClick={() => editor.chain().focus().setTextAlign('center').run()} className={`p-2 rounded-lg transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-primary/10 text-primary' : 'text-text-sub hover:bg-border-subtle'}`}><AlignCenter className="w-4 h-4" /></button>
@@ -206,8 +228,10 @@ function EditorPageInner() {
             </div>
 
             {/* TipTap Editor */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <EditorContent editor={editor} />
+            <div className="flex-1 overflow-y-auto scrollbar-thin bg-[#FAF9F5] flex justify-center py-8">
+              <div className="w-full flex justify-center">
+                <EditorContent editor={editor} className="bg-transparent" />
+              </div>
             </div>
           </div>
         </div>
@@ -229,35 +253,8 @@ function EditorPageInner() {
             <h3 className="font-semibold text-text-heading text-[12.5px]">AI Writing Assistant</h3>
           </div>
 
-          {/* Tabs: chat | analysis */}
-          <div className="flex border-b border-border-subtle flex-shrink-0">
-            {(['chat', 'analysis'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveAiTab(tab)}
-                className={`flex-1 py-2.5 text-[12px] font-medium transition-all border-b-2 capitalize ${activeAiTab === tab
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-text-light hover:text-text-sub'
-                  }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          {/* Fact check buttons */}
-          <div className="flex gap-2 p-3 border-b border-border-subtle flex-shrink-0">
-            <button className="flex-1 py-2 text-[11px] font-medium border border-border-default rounded-lg hover:bg-primary/5 text-text-sub hover:text-primary transition-colors">
-              Fact Check
-            </button>
-            <button className="flex-1 py-2 text-[11px] font-medium border border-border-default rounded-lg hover:bg-primary/5 text-text-sub hover:text-primary transition-colors">
-              Fact Check
-            </button>
-          </div>
-
           {/* Tab content */}
-          {activeAiTab === 'chat' ? (
-            /* ── AI CHAT ── */
-            <>
+          {/* ── AI CHAT ── */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin">
                 {chatMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-12">
@@ -302,39 +299,6 @@ function EditorPageInner() {
                   </button>
                 </div>
               </div>
-            </>
-          ) : (
-            /* ── ANALYSIS ── */
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-              {/* Horizontal action tab bar */}
-              <div className="border-b border-border-subtle">
-                <div className="flex overflow-x-auto hover-scrollbar">
-                  {([
-                    { icon: Languages, label: 'Translate' },
-                    { icon: Wand2, label: 'Improve' },
-                    { icon: Type, label: 'Simplify' },
-                    { icon: GraduationCap, label: 'Make Formal' },
-                    { icon: BookCheck, label: 'Citations' },
-                    { icon: RotateCcw, label: 'Rewrite' },
-                  ] as const).map(({ icon: Icon, label }, i) => {
-                    const active = i === 0;
-                    return (
-                      <button
-                        key={label}
-                        className={`flex items-center gap-1 px-2.5 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 transition-all flex-shrink-0 ${active
-                          ? 'border-amber-500 text-amber-600'
-                          : 'border-transparent text-text-light hover:text-text-sub hover:border-border-default'
-                          }`}
-                      >
-                        <Icon className="w-[11px] h-[11px]" strokeWidth={active ? 2.2 : 1.8} />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
