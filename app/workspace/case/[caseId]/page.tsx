@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import {
-  Bot, Send, FileText, Loader2, Play, Upload, ChevronDown, Menu, Sparkles,
-  MessageSquare, ChevronRight, FileStack, MessageCircle, MoreHorizontal,
+  Bot, Send, FileText, Loader2, Upload, ChevronRight, FileStack,
+  MessageSquare, MessageCircle, Search, Sparkles,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -13,10 +13,13 @@ import { documentService } from '@/services/documentService';
 import { draftService } from '@/services/draftService';
 import { chatService } from '@/services/chatService';
 import { caseChatService } from '@/services/caseChatService';
-import type { CaseDocument } from '@/services/caseService';
 import type { NoticeResponse } from '@/services/chatService';
 import { PageSkeleton } from '@/components/SkeletonLoader';
-  
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+type ChatMode = 'chat' | 'analysis' | 'draft';
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -24,6 +27,115 @@ interface ChatMessage {
   timestamp: Date;
   isAnalysis?: boolean;
 }
+
+const MODES: { id: ChatMode; label: string; icon: React.ElementType; placeholder: string }[] = [
+  {
+    id: 'chat',
+    label: 'Normal Chat',
+    icon: MessageCircle,
+    placeholder: 'Ask anything about this case...',
+  },
+  {
+    id: 'analysis',
+    label: 'Deep Research',
+    icon: Search,
+    placeholder: 'Describe what to analyze or extract from the document...',
+  },
+  {
+    id: 'draft',
+    label: 'Create Draft',
+    icon: Sparkles,
+    placeholder: 'Describe the draft or response you want to generate...',
+  },
+];
+
+const renderMessageContent = (content: string, router: ReturnType<typeof useRouter>, drafts: any[]) => {
+  if (content.startsWith('[DRAFT_JSON]')) {
+    try {
+      const data = JSON.parse(content.replace('[DRAFT_JSON]', ''));
+      const handleDownload = () => {
+        const element = document.createElement('a');
+        const file = new Blob([data.snippet], { type: 'text/plain' });
+        element.href = URL.createObjectURL(file);
+        element.download = `${data.title || 'Draft'}.txt`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      };
+
+      return (
+        <div className="flex flex-col gap-3 w-full mt-1">
+          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+             <Sparkles className="w-4 h-4" />
+             {data.title || 'Draft'}
+          </div>
+          <div className="bg-background-light border border-border-default rounded-xl p-3 text-sm text-text-sub">
+            {data.snippet || 'Draft content preview...'}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+             <button onClick={() => router.push(`/workspace/editor?id=${data.id}`)} className="flex-1 py-1.5 px-3 bg-white border border-border-default rounded-lg text-xs font-semibold hover:border-primary/50 hover:text-primary transition-colors text-center">
+               Show
+             </button>
+             <button onClick={handleDownload} className="flex-1 py-1.5 px-3 bg-white border border-border-default rounded-lg text-xs font-semibold hover:border-primary/50 hover:text-primary transition-colors text-center">
+               Download
+             </button>
+          </div>
+        </div>
+      );
+    } catch(e) {}
+  }
+
+  // legacy format check: "Draft created: **Draft Title**. Click it in the side panel to edit."
+  if (content.startsWith('Draft created: **') && content.includes('**.')) {
+    const titleMatch = content.match(/\*\*(.*?)\*\*/);
+    const title = titleMatch ? titleMatch[1] : 'Draft';
+    
+    // Attempt to match an existing draft from context to restore the full UI presentation
+    const matchedDraft = drafts.find((d) => d.title === title);
+    const draftId = matchedDraft?.id;
+    const rawText = String(matchedDraft?.content || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ');
+    const snippet = rawText ? (rawText.substring(0, 100).trim() + '...') : 'Draft content preview...';
+
+    const handleDownloadFallback = () => {
+      const element = document.createElement('a');
+      const file = new Blob([snippet], { type: 'text/plain' });
+      element.href = URL.createObjectURL(file);
+      element.download = `${title}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    };
+
+    return (
+      <div className="flex flex-col gap-3 w-full mt-1">
+        <div className="flex items-center gap-2 text-primary font-bold text-sm">
+           <Sparkles className="w-4 h-4" />
+           {title}
+        </div>
+        <div className="bg-background-light border border-border-default rounded-xl p-3 text-sm text-text-sub">
+          {snippet}
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+           <button 
+             disabled={!draftId}
+             onClick={() => draftId && router.push(`/workspace/editor?id=${draftId}`)} 
+             className="flex-1 py-2.5 px-3 bg-white border border-border-default rounded-lg text-xs font-semibold hover:border-primary/50 hover:text-primary transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
+           >
+             Show
+           </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="prose prose-sm prose-p:leading-relaxed prose-a:text-primary max-w-none break-words">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 export default function CaseChatPage() {
   const params = useParams();
@@ -35,14 +147,13 @@ export default function CaseChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [inputValue, setInputValue] = useState('');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>('chat');
+  const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [creatingDraft, setCreatingDraft] = useState(false);
   const [caseMenuOpen, setCaseMenuOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const documents = caseData?.documents ?? [];
   const drafts = caseData?.drafts ?? [];
@@ -81,151 +192,137 @@ export default function CaseChatPage() {
     [caseId]
   );
 
+  useEffect(() => { fetchCase(); }, [caseId, fetchCase]);
+  useEffect(() => { loadChat(); }, [loadChat]);
   useEffect(() => {
-    fetchCase();
-  }, [caseId, fetchCase]);
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [messages, sending]);
 
-  useEffect(() => {
-    loadChat();
-  }, [loadChat]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const actionMenuRef = useRef<HTMLDivElement>(null);
+  // Auto-close case menu on outside click
+  const caseMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (actionMenuRef.current?.contains(target)) return;
-      setActionMenuOpen(false);
-      setCaseMenuOpen(false);
+      if (!caseMenuRef.current?.contains(e.target as Node)) setCaseMenuOpen(false);
     };
     document.addEventListener('mousedown', onOutside);
     return () => document.removeEventListener('mousedown', onOutside);
   }, []);
 
-  const addUserMsg = (content: string) => {
+  // Auto-grow textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 192) + 'px';
+  }, [inputValue]);
+
+  const addUserMsg = (content: string) =>
     setMessages((prev) => [...prev, { id: `user-${Date.now()}`, role: 'user', content, timestamp: new Date() }]);
-  };
 
-  const addAiMsg = (content: string, isAnalysis = false) => {
+  const addAiMsg = (content: string, isAnalysis = false) =>
     setMessages((prev) => [...prev, { id: `ai-${Date.now()}`, role: 'assistant', content, timestamp: new Date(), isAnalysis }]);
-  };
 
-  const addErrorMsg = (msg: string) => {
+  const addErrorMsg = (msg: string) =>
     setMessages((prev) => [...prev, { id: `err-${Date.now()}`, role: 'assistant', content: `⚠️ ${msg}`, timestamp: new Date() }]);
-  };
 
   const filterCitations = (cites: string[]) =>
     cites.filter((c) => c.trim().toLowerCase() !== 'unknown document');
 
-  const formatAnalysis = (r: NoticeResponse): string => {
-    let s = '';
-    if (r.draft_reply) s += `**Draft Reply:**\n${r.draft_reply}\n\n`;
-    const filtered = filterCitations(r.citations ?? []);
-    if (filtered.length) s += `**Legal References:**\n${filtered.map((c) => `• ${c}`).join('\n')}`;
-    if (!s.trim()) s = JSON.stringify(r, null, 2);
-    return s;
-  };
-
   const handleSend = async () => {
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text || sending) return;
+
     setInputValue('');
     addUserMsg(text);
-    setChatLoading(true);
-    try {
-      const docRefs = documents.map(d => ({
-        document_id: d.id,
-        filename: d.filename,
-        s3_bucket: d.s3Bucket,
-        s3_key: d.s3Key,
-      }));
+    setSending(true);
 
-      const result = await chatService.sendChatMessage({
-        message: text,
-        session_id: caseId || 'unknown-session',
-        documents: docRefs,
-      });
-      const ans = result.answer ?? '';
-      const cites = filterCitations(result.citations ?? []);
-      const content = cites.length ? `${ans}\n\n**References:**\n${cites.map((c) => `• ${c}`).join('\n')}` : ans;
-      addAiMsg(content || 'I could not generate a response.');
-      await saveMessage('user', text);
-      await saveMessage('assistant', content);
+    try {
+      if (chatMode === 'chat') {
+        // ── Normal Chat ──
+        const docRefs = documents.map((d) => ({
+          document_id: d.id,
+          filename: d.filename,
+          s3_bucket: d.s3Bucket,
+          s3_key: d.s3Key,
+        }));
+        const result = await chatService.sendChatMessage({
+          message: text,
+          session_id: caseId || 'unknown-session',
+          documents: docRefs,
+        });
+        const ans = result.answer ?? '';
+        const cites = filterCitations(result.citations ?? []);
+        const content = cites.length
+          ? `${ans}\n\n**References:**\n${cites.map((c) => `• ${c}`).join('\n')}`
+          : ans;
+        addAiMsg(content || 'I could not generate a response.');
+        await saveMessage('user', text);
+        await saveMessage('assistant', content);
+
+      } else if (chatMode === 'analysis') {
+        // ── Deep Research (Analysis) ──
+        if (documents.length === 0) {
+          addErrorMsg('Upload a document first to run deep research.');
+          return;
+        }
+        const docRefs = documents.map((d) => ({
+          document_id: d.id,
+          filename: d.filename,
+          s3_bucket: d.s3Bucket,
+          s3_key: d.s3Key,
+        }));
+        await saveMessage('user', text);
+        const result = await chatService.analyzeNotice({
+          session_id: caseId || 'unknown-session',
+          documents: docRefs,
+          message: text,
+        });
+        const content = result.report?.trim() || 'Analysis failed to generate a report.';
+        addAiMsg(content, true);
+        await saveMessage('assistant', content, true);
+
+      } else if (chatMode === 'draft') {
+        // ── Create Draft ──
+        if (documents.length === 0) {
+          addErrorMsg('Upload a document first to create a draft.');
+          return;
+        }
+        const docRefs = documents.map((d) => ({
+          document_id: d.id,
+          filename: d.filename,
+          s3_bucket: d.s3Bucket,
+          s3_key: d.s3Key,
+        }));
+        await saveMessage('user', text);
+        const result = await chatService.generateDraft({
+          session_id: caseId || 'unknown-session',
+          documents: docRefs,
+          message: text,
+        });
+        const draftTitle =
+          documents.length > 1
+            ? 'Draft – Multiple Documents'
+            : `Draft – ${documents[0].filename}`;
+        const draft = await draftService.createDraft({
+          title: draftTitle,
+          content: result.html_content || '',
+          caseId: caseId ?? undefined,
+        });
+        const rawText = String(result.html_content || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ');
+        const snippet = rawText.substring(0, 100).trim() + '...';
+        const aiContent = `[DRAFT_JSON]${JSON.stringify({ id: draft.id, title: draft.title, snippet })}`;
+        addAiMsg(aiContent);
+        await saveMessage('assistant', aiContent);
+        await fetchCase();
+      }
     } catch (err: any) {
       const d = err?.response?.data?.detail;
-      addErrorMsg(typeof d === 'object' ? `${d?.stage || ''} ${d?.error || ''}`.trim() || 'Chat failed' : 'Chat failed');
+      addErrorMsg(typeof d === 'object' ? `${d?.stage || ''} ${d?.error || ''}`.trim() || 'Request failed' : 'Request failed');
     } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const runAnalysis = async () => {
-    if (documents.length === 0) {
-      addErrorMsg('Upload a document first to run analysis.');
-      return;
-    }
-    setAnalyzing(true);
-    try {
-      const docRefs = documents.map(d => ({
-        document_id: d.id,
-        filename: d.filename,
-        s3_bucket: d.s3Bucket,
-        s3_key: d.s3Key,
-      }));
-
-      const result = await chatService.analyzeNotice({
-        session_id: caseId || 'unknown-session',
-        documents: docRefs,
-      });
-
-      const content = result.report?.trim() || 'Analysis failed to generate a report.';
-      addAiMsg(content, true);
-      await saveMessage('assistant', content, true);
-    } catch (err: any) {
-      const d = err?.response?.data?.detail;
-      addErrorMsg(typeof d === 'object' ? `${d?.stage || ''} ${d?.error || ''}`.trim() || 'Analysis failed' : 'Analysis failed');
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const createDraft = async () => {
-    if (documents.length === 0) {
-      addErrorMsg('Upload a document first to create a draft.');
-      return;
-    }
-    setCreatingDraft(true);
-    try {
-      const docRefs = documents.map(d => ({
-        document_id: d.id,
-        filename: d.filename,
-        s3_bucket: d.s3Bucket,
-        s3_key: d.s3Key,
-      }));
-
-      const result = await chatService.generateDraft({
-        session_id: caseId || 'unknown-session',
-        documents: docRefs,
-      });
-      const draftTitle = documents.length > 1 ? 'Draft – Multiple Documents' : `Draft – ${documents[0].filename}`;
-      const draft = await draftService.createDraft({
-        title: draftTitle,
-        content: result.html_content || '',
-        caseId: caseId ?? undefined,
-      });
-      const aiContent = `Draft created: **${draft.title}**. Click it in the side panel to edit.`;
-      addAiMsg(aiContent);
-      await saveMessage('assistant', aiContent);
-      await fetchCase();
-      setActionMenuOpen(false);
-    } catch (err: any) {
-      const d = err?.response?.data?.detail;
-      addErrorMsg(typeof d === 'object' ? `${d?.stage || ''} ${d?.error || ''}`.trim() || 'Draft creation failed' : 'Draft creation failed');
-    } finally {
-      setCreatingDraft(false);
+      setSending(false);
     }
   };
 
@@ -244,7 +341,8 @@ export default function CaseChatPage() {
     }
   };
 
-  const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const formatTime = (d: Date) =>
+    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   if (isLoading || !caseData) {
     return (
@@ -255,73 +353,100 @@ export default function CaseChatPage() {
     );
   }
 
+  const activeMode = MODES.find((m) => m.id === chatMode)!;
+
   return (
     <>
       <Header title={caseData.title} subtitle={caseData.clientName || 'Chat & analysis'} />
       <div className="flex-1 flex overflow-hidden">
-        {/* Side panel */}
-        <aside className="w-[300px] border-r border-border-subtle bg-surface-light flex flex-col flex-shrink-0 shadow-sm">
-          <div className="p-4 border-b border-border-subtle bg-white/80">
+
+        {/* ── Side Panel ── */}
+        <aside className="w-[280px] border-r border-border-default bg-sidebar-bg flex flex-col flex-shrink-0">
+          {/* Case selector */}
+          <div className="p-4 border-b border-border-default" ref={caseMenuRef}>
             <button
-              onClick={(e) => { e.stopPropagation(); setCaseMenuOpen((o) => !o); }}
-              className="w-full flex items-center justify-between gap-2 rounded-xl p-3.5 bg-background-light/80 hover:bg-primary/5 border border-border-subtle transition-colors group"
+              onClick={() => setCaseMenuOpen((o) => !o)}
+              className="w-full flex items-center justify-between gap-2 rounded-xl p-3 bg-background-light hover:bg-active-bg border border-border-default transition-colors group"
             >
               <div className="text-left min-w-0">
                 <p className="text-[10px] font-bold text-text-light uppercase tracking-wider mb-0.5">Open Case</p>
-                <p className="text-sm font-semibold text-text-heading truncate group-hover:text-primary transition-colors">{caseData.title}</p>
+                <p className="text-sm font-semibold text-text-heading truncate group-hover:text-primary transition-colors">
+                  {caseData.title}
+                </p>
               </div>
               <ChevronRight className={`w-4 h-4 text-text-light flex-shrink-0 transition-transform duration-200 ${caseMenuOpen ? 'rotate-90' : ''}`} />
             </button>
             {caseMenuOpen && (
-              <div className="mt-3 p-4 rounded-xl bg-background-light/80 border border-border-subtle space-y-3">
+              <div className="mt-3 p-4 rounded-xl bg-background-light border border-border-default space-y-2">
                 <p className="text-[10px] font-bold text-text-light uppercase tracking-wider">Case Details</p>
                 {caseData.description && <p className="text-sm text-text-sub leading-relaxed">{caseData.description}</p>}
-                {caseData.clientName && <p className="text-sm text-text-sub"><span className="font-medium text-text-heading">Client:</span> {caseData.clientName}</p>}
-                {caseData.referenceNo && <p className="text-sm text-text-sub"><span className="font-medium text-text-heading">Ref:</span> {caseData.referenceNo}</p>}
+                {caseData.clientName && (
+                  <p className="text-sm text-text-sub">
+                    <span className="font-medium text-text-heading">Client:</span> {caseData.clientName}
+                  </p>
+                )}
+                {caseData.referenceNo && (
+                  <p className="text-sm text-text-sub">
+                    <span className="font-medium text-text-heading">Ref:</span> {caseData.referenceNo}
+                  </p>
+                )}
                 {!caseData.description && !caseData.clientName && !caseData.referenceNo && (
                   <p className="text-xs text-text-light italic">No details added yet</p>
                 )}
               </div>
             )}
           </div>
+
+          {/* Documents & Drafts */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
+            {/* Documents */}
             <section>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-text-light uppercase tracking-wider">Uploaded Documents</p>
+                <p className="text-[10px] font-bold text-text-light uppercase tracking-wider">Documents</p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
                   title="Upload document"
                 >
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 </button>
               </div>
               <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={handleUpload} />
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {documents.length === 0 ? (
-                  <p className="text-xs text-text-light py-3 px-3 rounded-lg bg-background-light/50 border border-dashed border-border-subtle">No documents. Upload to add.</p>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 rounded-xl border-2 border-dashed border-border-default hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all text-center"
+                  >
+                    <Upload className="w-5 h-5 text-text-light" />
+                    <p className="text-xs text-text-light">Upload a document</p>
+                  </div>
                 ) : (
                   documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-background-light/80 border border-border-subtle cursor-default">
-                      <FileText className="w-4 h-4 text-text-light flex-shrink-0" />
-                      <span className="text-sm text-text-heading truncate select-none">{doc.filename}</span>
+                    <div key={doc.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-background-light border border-border-subtle">
+                      <FileStack className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span className="text-sm text-text-heading truncate">{doc.filename}</span>
                     </div>
                   ))
                 )}
               </div>
             </section>
+
+            {/* Drafts */}
             <section>
               <p className="text-[10px] font-bold text-text-light uppercase tracking-wider mb-3">Drafts</p>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {drafts.length === 0 ? (
-                  <p className="text-xs text-text-light py-3 px-3 rounded-lg bg-background-light/50 border border-dashed border-border-subtle">No drafts yet.</p>
+                  <p className="text-xs text-text-light py-3 px-3 rounded-lg bg-background-light border border-dashed border-border-subtle">
+                    No drafts yet.
+                  </p>
                 ) : (
                   drafts.map((d) => (
                     <button
                       key={d.id}
                       onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
-                      className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-sm truncate hover:bg-primary/10 hover:border-primary/20 text-text-sub hover:text-primary border border-transparent hover:border transition-all"
+                      className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-sm truncate hover:bg-active-bg hover:text-primary text-text-sub border border-transparent hover:border-border-default transition-all"
                     >
                       <FileText className="w-4 h-4 flex-shrink-0" />
                       {d.title}
@@ -333,153 +458,145 @@ export default function CaseChatPage() {
           </div>
         </aside>
 
-        {/* Main chat - Cloud/Claude style */}
-        <main className="flex-1 flex flex-col bg-white min-w-0">
-          {firstDoc && (
-            <div className="px-6 py-3 border-b border-border-subtle/60 bg-white/60 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileStack className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm text-text-sub truncate">{firstDoc.filename}</span>
-              </div>
-              <button
-                onClick={runAnalysis}
-                disabled={analyzing}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 flex-shrink-0"
-              >
-                <Play className="w-4 h-4" />
-                Analysis
-              </button>
-            </div>
-          )}
+        {/* ── Main Chat ── */}
+        <main className="flex-1 flex flex-col bg-background-light min-w-0 relative">
 
-          <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-6 scrollbar-thin min-h-0">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-6 scrollbar-thin min-h-0 pb-40">
             {historyLoading ? (
               <div className="flex items-center justify-center py-20 gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-text-sub">Loading chat...</span>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 max-w-md mx-auto">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-inner">
+              <div className="flex flex-col items-center justify-center py-24 max-w-md mx-auto text-center">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
                   <MessageSquare className="w-10 h-10 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold text-text-heading mb-2">Start a conversation</h3>
-                <p className="text-text-sub text-sm text-center leading-relaxed">
-                  Ask tax questions, run analysis, or create drafts. Chat is saved automatically.
+                <p className="text-text-sub text-sm leading-relaxed mb-8">
+                  Select a mode below, type your prompt, and press Send.
                 </p>
+                {/* Mode hints */}
+                <div className="grid grid-cols-3 gap-3 w-full">
+                  {MODES.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setChatMode(m.id); textareaRef.current?.focus(); }}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all text-xs font-medium
+                        ${chatMode === m.id
+                          ? 'bg-primary/10 border-primary/30 text-primary'
+                          : 'border-border-default text-text-sub hover:border-primary/20 hover:bg-primary/5'
+                        }`}
+                    >
+                      <m.icon className="w-5 h-5" />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-primary text-white shadow-sm' : 'bg-white border border-border-subtle shadow-sm'}`}>
-                    {msg.role === 'user' ? <span className="text-xs font-bold">{user?.name?.[0] || 'U'}</span> : <Bot className="w-4 h-4 text-primary" />}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border ${
+                    msg.role === 'user' ? 'bg-primary text-white border-primary' : 'bg-white border-border-default'
+                  }`}>
+                    {msg.role === 'user'
+                      ? <span className="text-xs font-bold">{user?.name?.[0] || 'U'}</span>
+                      : <Bot className="w-4 h-4 text-primary" />
+                    }
                   </div>
                   <div className={`flex flex-col gap-1 min-w-0 flex-1 ${msg.role === 'user' ? 'items-end' : ''}`}>
                     <span className="text-[11px] text-text-light px-1">{formatTime(msg.timestamp)}</span>
-                    <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-sm' : 'bg-white border border-border-subtle rounded-tl-sm'}`}>
-                      <div className="whitespace-pre-wrap break-words">
-                        {msg.content.split('**').map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>))}
-                      </div>
+                    <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-white rounded-tr-sm'
+                        : 'bg-white border border-border-default rounded-tl-sm'
+                    }`}>
+                      {renderMessageContent(msg.content, router, drafts)}
                     </div>
                   </div>
                 </div>
               ))
             )}
-            {(chatLoading || analyzing) && (
+
+            {/* Typing indicator */}
+            {sending && (
               <div className="flex gap-4 max-w-3xl">
-                <div className="w-9 h-9 rounded-lg bg-white border border-border-subtle flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-white border border-border-default flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <div className="flex items-center gap-2 text-text-sub text-sm py-3 px-4 rounded-2xl bg-white border border-border-subtle shadow-sm">
+                <div className="flex items-center gap-2 text-text-sub text-sm py-3 px-4 rounded-2xl bg-white border border-border-default shadow-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {analyzing ? 'Analyzing document...' : 'Thinking...'}
+                  {chatMode === 'analysis' ? 'Running deep research...' : chatMode === 'draft' ? 'Generating draft...' : 'Thinking...'}
                 </div>
               </div>
             )}
-            <div ref={chatEndRef} />
+            {/* Empty space so the last message isn't hidden behind the floating input */}
+            <div className="h-32 flex-shrink-0" ref={chatEndRef} />
           </div>
 
-          {/* Input: menu popup + increased height */}
-          <div className="px-4 lg:px-6 py-3 border-t border-border-subtle bg-white">
-            <div className="max-w-3xl mx-auto">
-              <div className="relative flex items-end gap-0 rounded-2xl border border-border-default bg-white focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all">
-                <div ref={actionMenuRef} className="relative flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActionMenuOpen((o) => !o); }}
-                    className="p-3 text-text-light hover:text-primary hover:bg-primary/5 transition-colors"
-                    aria-label="Options"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  {actionMenuOpen && (
-                    <div className="absolute left-0 bottom-full mb-1 w-56 bg-white border border-border-default rounded-xl shadow-xl py-1.5 z-50">
-                      <div className="flex items-center justify-between px-4 py-2 border-b border-border-subtle">
-                        <span className="text-xs font-semibold text-text-light">Actions</span>
-                        <button
-                          onClick={() => setActionMenuOpen(false)}
-                          className="p-1 rounded hover:bg-background-light text-text-light"
-                          aria-label="Close"
-                        >
-                          <span className="text-lg leading-none">×</span>
-                        </button>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setActionMenuOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-text-sub hover:bg-primary/5 flex items-center gap-2"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        Default mode (chat)
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); runAnalysis(); setActionMenuOpen(false); }}
-                        disabled={!firstDoc || analyzing}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Analysis (decode)
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); createDraft(); setActionMenuOpen(false); }}
-                        disabled={!firstDoc || creatingDraft}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {creatingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                        Create draft
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); drafts[0] && router.push(`/workspace/editor?id=${drafts[0].id}`); setActionMenuOpen(false); }}
-                        disabled={drafts.length === 0}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <FileText className="w-4 h-4" />
-                        Modify draft
-                      </button>
-                    </div>
-                  )}
-                </div>
+          {/* ── Floating Input Area ── */}
+          <div className="absolute bottom-6 left-0 right-0 px-4 lg:px-6 pointer-events-none flex justify-center">
+            <div className="w-full max-w-3xl pointer-events-auto shadow-xl rounded-2xl bg-white border border-border-default transition-all duration-150 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
+                {/* Textarea */}
                 <textarea
+                  ref={textareaRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Type a message..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={activeMode.placeholder}
                   rows={1}
-                  className="flex-1 min-h-[64px] max-h-48 resize-none bg-transparent px-4 py-4 text-[15px] leading-relaxed focus:outline-none"
-                  disabled={chatLoading || analyzing}
-                  style={{ outline: 'none' }}
+                  className="w-full min-h-[52px] max-h-48 resize-none bg-transparent px-4 pt-4 pb-2 text-[15px] leading-relaxed focus:outline-none placeholder-text-light text-text-main"
+                  disabled={sending}
                   aria-label="Message"
                 />
-                <button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || chatLoading || analyzing}
-                  className="p-3 text-primary hover:bg-primary/5 disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex-shrink-0"
-                  aria-label="Send"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+
+                {/* Bottom bar: mode chips + send */}
+                <div className="flex items-center justify-between px-3 pb-3 pt-1 gap-3">
+                  {/* Mode chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {MODES.map((m) => {
+                      const active = chatMode === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setChatMode(m.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 border ${
+                            active
+                              ? 'bg-primary text-white border-primary shadow-sm'
+                              : 'text-text-sub border-border-default hover:border-primary/30 hover:text-primary hover:bg-primary/5'
+                          }`}
+                        >
+                          <m.icon className="w-3.5 h-3.5" />
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Send button */}
+                  <button
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || sending}
+                    className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                    aria-label="Send"
+                  >
+                    {sending
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <Send className="w-4 h-4" />
+                    }
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+
         </main>
       </div>
     </>

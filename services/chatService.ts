@@ -15,6 +15,7 @@ export interface AnalyzeDocumentPayload {
   documents: DocumentRef[];
   notice_type?: string;
   regenerate?: boolean;
+  message?: string;
 }
 
 export interface ChatMessagePayload {
@@ -32,6 +33,7 @@ export interface StrategyPayload {
 export interface DraftPayload {
   session_id: string;
   documents: DocumentRef[];
+  message?: string;
 }
 
 // NoticeResponse from backend (often used by decode)
@@ -102,11 +104,12 @@ export const chatService = {
   /**
    * Run deep structured analysis of parsed documents (analyze mode).
    */
-  async analyzeNotice(payload: { session_id: string; documents: DocumentRef[] }): Promise<AnalysisResponse> {
+  async analyzeNotice(payload: { session_id: string; documents: DocumentRef[]; message?: string }): Promise<AnalysisResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'analyze',
       session_id: payload.session_id,
       documents: payload.documents,
+      ...(payload.message ? { message: payload.message } : {}),
     });
     return data;
   },
@@ -132,6 +135,7 @@ export const chatService = {
       mode: 'draft',
       session_id: payload.session_id,
       documents: payload.documents,
+      ...(payload.message ? { message: payload.message } : {}),
     });
     return data;
   },
