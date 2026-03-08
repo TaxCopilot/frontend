@@ -138,10 +138,13 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
 
     try {
       const result = await chatService.decodeDocument({
-        document_id: docId,
+        session_id: docId,
+        documents: [{
+          document_id: docId,
+          s3_bucket: document.s3Bucket ?? null,
+          s3_key: document.s3Key ?? null,
+        }],
         notice_type: 'auto-detect',
-        s3_bucket: document.s3Bucket,
-        s3_key: document.s3Key,
       });
 
       const analysisContent = formatAnalysisResponse(result);
@@ -190,7 +193,11 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
       setError(null);
 
       try {
-        const result = await chatService.sendChatMessage({ message: text, document_id: docId ?? undefined });
+        const result = await chatService.sendChatMessage({ 
+          session_id: docId ?? 'unknown',
+          documents: docId ? [{ document_id: docId }] : [],
+          message: text 
+        });
         const answer = result.answer ?? '';
         const citations = result.citations ?? [];
         const content =
@@ -241,16 +248,14 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     setMessages((prev) => [...prev, userMsg]);
     try {
       const result = await chatService.analyzeNotice({
-        document_id: docId,
-        s3_bucket: document?.s3Bucket ?? undefined,
-        s3_key: document?.s3Key ?? undefined,
+        session_id: docId,
+        documents: [{
+          document_id: docId,
+          s3_bucket: document?.s3Bucket ?? null,
+          s3_key: document?.s3Key ?? null,
+        }],
       });
-      let content = `**Notice Summary:**\n${result.summary}\n\n`;
-      if (result.sections_applied?.length) content += `**Sections Applied:**\n${result.sections_applied.map(s => `• ${s}`).join('\n')}\n\n`;
-      if (result.demands?.length) content += `**Demands:**\n${result.demands.map(d => `• ${d.description}: ${d.amount}`).join('\n')}\n\n`;
-      if (result.deadline) content += `**Deadline:**\n• ${result.deadline}\n\n`;
-      if (result.immediate_actions?.length) content += `**Immediate Actions:**\n${result.immediate_actions.map(a => `• ${a}`).join('\n')}\n\n`;
-      if (result.citations?.length) content += `**Citations:**\n${result.citations.map(c => `• ${c}`).join('\n')}`;
+      let content = result.report;
 
       const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'assistant', content: content.trim(), timestamp: new Date() };
       setMessages((prev) => [...prev, aiMsg]);
@@ -277,10 +282,13 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     setMessages((prev) => [...prev, userMsg]);
     try {
       const result = await chatService.generateStrategy({
-        document_id: docId,
+        session_id: docId,
+        documents: [{
+          document_id: docId,
+          s3_bucket: document?.s3Bucket ?? null,
+          s3_key: document?.s3Key ?? null,
+        }],
         account_details: accountDetails,
-        s3_bucket: document?.s3Bucket ?? undefined,
-        s3_key: document?.s3Key ?? undefined,
       });
       let content = `**Defense Strategy Steps:**\n${result.strategy_steps.map(s => `• ${s}`).join('\n')}\n\n`;
       if (result.suggested_reply_points?.length) content += `**Suggested Reply Points:**\n${result.suggested_reply_points.map(p => `• ${p}`).join('\n')}\n\n`;
@@ -312,9 +320,12 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     setMessages((prev) => [...prev, userMsg]);
     try {
       const result = await chatService.generateDraft({
-        document_id: docId,
-        s3_bucket: document?.s3Bucket ?? undefined,
-        s3_key: document?.s3Key ?? undefined,
+        session_id: docId,
+        documents: [{
+          document_id: docId,
+          s3_bucket: document?.s3Bucket ?? null,
+          s3_key: document?.s3Key ?? null,
+        }],
       });
       let content = `${result.html_content}`;
       if (result.citations?.length) content += `\n\n**Citations Used:**\n${result.citations.map(c => `• ${c}`).join('\n')}`;
