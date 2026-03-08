@@ -1,4 +1,4 @@
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export function Header({ 
   title, 
@@ -22,26 +22,22 @@ export function Header({
       <div className="flex items-center gap-4">
         {/* Search */}
         {onSearch !== undefined && (
-          <div className="relative flex items-center min-w-0 max-w-64 w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-light flex-shrink-0 pointer-events-none" />
+          <div className="relative flex items-center min-w-0 md:w-[320px] transition-all group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-sub flex-shrink-0 pointer-events-none z-10" />
             <input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue || ''}
               onChange={(e) => onSearch(e.target.value)}
-              className="w-full min-w-0 pl-10 pr-4 py-2.5 bg-background-light border border-border-default rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-surface-light placeholder-text-light transition-all outline-none"
+              className="w-full min-w-0 pl-10 pr-[72px] py-2.5 bg-white border border-border-default rounded-[24px] text-sm text-text-heading placeholder:text-text-sub focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none leading-none shadow-sm"
               style={{ boxSizing: 'border-box' }}
             />
+            {/* Shortcut Badge */}
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center bg-[#3f3f46] text-white/90 text-xs px-2.5 py-1.5 rounded-[16px] pointer-events-none font-medium opacity-100 transition-opacity">
+              + Space
+            </div>
           </div>
         )}
-
-        <div className="h-6 w-px bg-border-default mx-1" />
-
-        {/* Notifications */}
-        <button className="relative p-2 rounded-full hover:bg-background-light text-text-light hover:text-text-sub transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-secondary rounded-full" />
-        </button>
       </div>
     </header>
   );

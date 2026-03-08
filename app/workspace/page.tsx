@@ -69,23 +69,14 @@ export default function WorkspacePage() {
 
   return (
     <>
-      <Header title="Workspace" subtitle={`Good to see you, ${firstName}`} />
+      <Header 
+        title="Workspace" 
+        subtitle={`Good to see you, ${firstName}`}
+        onSearch={setSearchTerm}
+        searchValue={searchTerm}
+        searchPlaceholder="Search cases..."
+      />
       <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 pt-8 scrollbar-thin">
-        {/* CTA Section - Image 3 style */}
-        <div className="mb-10">
-          <h2 className="text-2xl font-bold text-text-heading mb-2">Ready to analyze a new case?</h2>
-          <p className="text-text-sub text-sm max-w-2xl mb-6">
-            Upload a tax notice or legal document. The Agentic AI will analyze the root cause, cross-reference laws, and draft a response strategy instantly.
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3.5 rounded-xl font-semibold shadow-md hover:bg-primary-dark transition-all"
-          >
-            <MessageCircle className="w-5 h-5" />
-            Start Agentic Chat
-          </button>
-        </div>
-
         {/* Cases Section */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -93,18 +84,6 @@ export default function WorkspacePage() {
               Cases <span className="text-text-light font-normal">{filtered.length}</span>
             </h3>
             <div className="flex items-center gap-3">
-              {/* Floating search - icon + minimal */}
-              <div className="relative flex items-center rounded-xl border border-border-default bg-white pl-3 pr-4 py-2 w-44 sm:w-52 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all">
-                <Search className="w-4 h-4 text-text-light flex-shrink-0" aria-hidden />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 min-w-0 bg-transparent px-2 py-0.5 text-sm placeholder-text-light focus:outline-none"
-                  aria-label="Search cases"
-                />
-              </div>
               {/* Sort by */}
               <div className="relative">
                 <button
