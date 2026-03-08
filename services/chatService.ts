@@ -2,28 +2,36 @@ import api from './api';
 
 // ─── Request / Response Types ────────────────────────────────────────────────
 
-export interface AnalyzeDocumentPayload {
+export interface DocumentRef {
   document_id: string;
-  notice_type?: string;
+  filename?: string | null;
   s3_bucket?: string | null;
   s3_key?: string | null;
+  extracted_text?: string | null;
+}
+
+export interface AnalyzeDocumentPayload {
+  session_id: string;
+  documents: DocumentRef[];
+  notice_type?: string;
   regenerate?: boolean;
 }
 
 export interface ChatMessagePayload {
+  session_id: string;
+  documents: DocumentRef[];
   message: string;
-  document_id?: string;
-  s3_bucket?: string | null;
-  s3_key?: string | null;
 }
 
 export interface StrategyPayload {
-  document_id: string;
+  session_id: string;
+  documents: DocumentRef[];
   account_details?: string;
 }
 
 export interface DraftPayload {
-  document_id: string;
+  session_id: string;
+  documents: DocumentRef[];
 }
 
 // NoticeResponse from backend (often used by decode)
@@ -40,12 +48,10 @@ export interface NoticeResponse {
 
 // AnalysisResponse from backend (for mode: analyze)
 export interface AnalysisResponse {
-  summary: string;
-  sections_applied: string[];
-  demands: { description: string; amount: string }[];
+  report: string;
+  notice_type: string;
+  risk_level: string;
   deadline: string;
-  immediate_actions: string[];
-  citations: string[];
 }
 
 // StrategyResponse from backend (for mode: strategy)
@@ -85,24 +91,22 @@ export const chatService = {
   async decodeDocument(payload: AnalyzeDocumentPayload): Promise<NoticeResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'decode',
-      document_id: payload.document_id,
+      session_id: payload.session_id,
+      documents: payload.documents,
       notice_type: payload.notice_type ?? 'auto-detect',
-      s3_bucket: payload.s3_bucket,
-      s3_key: payload.s3_key,
       regenerate: payload.regenerate ?? false,
     });
     return data;
   },
 
   /**
-   * Run deep structured analysis of a parsed document (analyze mode).
+   * Run deep structured analysis of parsed documents (analyze mode).
    */
-  async analyzeNotice(payload: { document_id: string; s3_bucket?: string; s3_key?: string }): Promise<AnalysisResponse> {
+  async analyzeNotice(payload: { session_id: string; documents: DocumentRef[] }): Promise<AnalysisResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'analyze',
-      document_id: payload.document_id,
-      s3_bucket: payload.s3_bucket,
-      s3_key: payload.s3_key,
+      session_id: payload.session_id,
+      documents: payload.documents,
     });
     return data;
   },
@@ -110,13 +114,12 @@ export const chatService = {
   /**
    * Generate a defense strategy (strategy mode).
    */
-  async generateStrategy(payload: StrategyPayload & { s3_bucket?: string; s3_key?: string }): Promise<StrategyResponse> {
+  async generateStrategy(payload: StrategyPayload): Promise<StrategyResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'strategy',
-      document_id: payload.document_id,
+      session_id: payload.session_id,
+      documents: payload.documents,
       account_details: payload.account_details,
-      s3_bucket: payload.s3_bucket,
-      s3_key: payload.s3_key,
     });
     return data;
   },
@@ -124,12 +127,11 @@ export const chatService = {
   /**
    * Generate an HTML-formatted draft reply (draft mode).
    */
-  async generateDraft(payload: DraftPayload & { s3_bucket?: string; s3_key?: string }): Promise<DraftHtmlResponse> {
+  async generateDraft(payload: DraftPayload): Promise<DraftHtmlResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'draft',
-      document_id: payload.document_id,
-      s3_bucket: payload.s3_bucket,
-      s3_key: payload.s3_key,
+      session_id: payload.session_id,
+      documents: payload.documents,
     });
     return data;
   },
@@ -141,10 +143,9 @@ export const chatService = {
   async sendChatMessage(payload: ChatMessagePayload): Promise<ChatResponse> {
     const { data } = await api.post('/api/ai/v1/ask', {
       mode: 'chat',
+      session_id: payload.session_id,
+      documents: payload.documents,
       message: payload.message,
-      document_id: payload.document_id,
-      s3_bucket: payload.s3_bucket ?? undefined,
-      s3_key: payload.s3_key ?? undefined,
     });
     return data;
   },

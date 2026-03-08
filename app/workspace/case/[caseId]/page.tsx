@@ -136,11 +136,17 @@ export default function CaseChatPage() {
     addUserMsg(text);
     setChatLoading(true);
     try {
+      const docRefs = documents.map(d => ({
+        document_id: d.id,
+        filename: d.filename,
+        s3_bucket: d.s3Bucket,
+        s3_key: d.s3Key,
+      }));
+
       const result = await chatService.sendChatMessage({
         message: text,
-        document_id: firstDoc?.id,
-        s3_bucket: firstDoc?.s3Bucket ?? undefined,
-        s3_key: firstDoc?.s3Key ?? undefined,
+        session_id: caseId || 'unknown-session',
+        documents: docRefs,
       });
       const ans = result.answer ?? '';
       const cites = filterCitations(result.citations ?? []);
@@ -157,22 +163,25 @@ export default function CaseChatPage() {
   };
 
   const runAnalysis = async () => {
-    if (!firstDoc) {
+    if (documents.length === 0) {
       addErrorMsg('Upload a document first to run analysis.');
       return;
     }
     setAnalyzing(true);
-    const userContent = `Please analyze the document "${firstDoc.filename}".`;
-    addUserMsg(userContent);
-    await saveMessage('user', userContent);
     try {
-      const result = await chatService.decodeDocument({
-        document_id: firstDoc.id,
-        notice_type: 'auto-detect',
-        s3_bucket: firstDoc.s3Bucket ?? undefined,
-        s3_key: firstDoc.s3Key ?? undefined,
+      const docRefs = documents.map(d => ({
+        document_id: d.id,
+        filename: d.filename,
+        s3_bucket: d.s3Bucket,
+        s3_key: d.s3Key,
+      }));
+
+      const result = await chatService.analyzeNotice({
+        session_id: caseId || 'unknown-session',
+        documents: docRefs,
       });
-      const content = formatAnalysis(result);
+
+      const content = result.report?.trim() || 'Analysis failed to generate a report.';
       addAiMsg(content, true);
       await saveMessage('assistant', content, true);
     } catch (err: any) {
@@ -184,22 +193,26 @@ export default function CaseChatPage() {
   };
 
   const createDraft = async () => {
-    if (!firstDoc) {
+    if (documents.length === 0) {
       addErrorMsg('Upload a document first to create a draft.');
       return;
     }
     setCreatingDraft(true);
-    const userContent = 'Please prepare a formal draft reply based on the notice.';
-    addUserMsg(userContent);
-    await saveMessage('user', userContent);
     try {
+      const docRefs = documents.map(d => ({
+        document_id: d.id,
+        filename: d.filename,
+        s3_bucket: d.s3Bucket,
+        s3_key: d.s3Key,
+      }));
+
       const result = await chatService.generateDraft({
-        document_id: firstDoc.id,
-        s3_bucket: firstDoc.s3Bucket ?? undefined,
-        s3_key: firstDoc.s3Key ?? undefined,
+        session_id: caseId || 'unknown-session',
+        documents: docRefs,
       });
+      const draftTitle = documents.length > 1 ? 'Draft – Multiple Documents' : `Draft – ${documents[0].filename}`;
       const draft = await draftService.createDraft({
-        title: `Draft – ${firstDoc.filename}`,
+        title: draftTitle,
         content: result.html_content || '',
         caseId: caseId ?? undefined,
       });
