@@ -9,7 +9,7 @@ import {
   Lock
 } from 'lucide-react';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -18,53 +18,75 @@ gsap.registerPlugin(useGSAP);
 export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const ctaHref = isAuthenticated ? '/workspace' : '/login';
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const preloaderRef = useRef<HTMLDivElement>(null);
+
+  // Loading counter 0 → 100
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    let current = 0;
+    const total = 100;
+    const duration = 1800; // ms
+    const interval = duration / total;
+    const timer = setInterval(() => {
+      current += 1;
+      setProgress(current);
+      if (current >= total) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, []);
 
   useGSAP(() => {
     const tl = gsap.timeline();
 
-    // 1. Initial logo pulse/scale
-    tl.fromTo('.preloader-logo', 
-      { scale: 0.8, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.8, ease: 'back.out(1.5)' }
+    // 1. Initial logo fade in
+    tl.fromTo('.preloader-logo',
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, ease: 'power3.out' }
     )
-    .to('.preloader-logo', { scale: 1.1, duration: 0.4, ease: 'power2.inOut', yoyo: true, repeat: 1 })
-    // 2. Preloader slides up and fades
-    .to(preloaderRef.current, {
-      yPercent: -100,
-      opacity: 0,
-      duration: 1.2,
-      ease: 'power4.inOut',
-      delay: 0.2
-    })
-    // 3. Stagger in navbar and hero elements
-    .fromTo('.reveal-el', 
-      { y: 40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' },
-      "-=0.6" // overlap with preloader exit
-    );
+      // 2. Preloader slides up and fades
+      .to(preloaderRef.current, {
+        yPercent: -100,
+        opacity: 0,
+        duration: 1.2,
+        ease: 'power4.inOut',
+        delay: 0.2
+      })
+      // 3. Stagger in navbar and hero elements
+      .fromTo('.reveal-el',
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' },
+        "-=0.6" // overlap with preloader exit
+      );
   }, { scope: containerRef });
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background-light font-sans text-text-main selection:bg-primary/20 overflow-x-hidden">
-      
+
       {/* ── PRELOADER ── */}
-      <div 
-        ref={preloaderRef} 
+      <div
+        ref={preloaderRef}
         className="fixed inset-0 z-[100] bg-[#FAF9F5] flex flex-col items-center justify-center pointer-events-none"
       >
-        <div className="preloader-logo flex items-center gap-4">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center font-serif font-bold text-white text-3xl shadow-xl">
-            T
-          </div>
-          <span className="text-4xl font-serif font-bold tracking-tight text-text-heading">TaxCopilot</span>
+        {/* Logo */}
+        <div className="preloader-logo flex items-center justify-center mb-4">
+          <span className="text-2xl font-bold text-text-heading tracking-[0.3em] uppercase" style={{ fontFamily: 'var(--font-montserrat)' }}>Loading...</span>
         </div>
-        <div className="absolute bottom-10 flex items-center gap-2 opacity-50">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+
+        {/* Progress bar + counter */}
+        <div className="mt-10 flex flex-col items-center gap-3 w-80">
+          <div className="w-full h-[6px] bg-border-default rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-none"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Bottom-right large counter */}
+        <div className="absolute bottom-8 right-10 text-[56px] font-mono font-bold text-text-heading/10 tabular-nums leading-none select-none">
+          {String(progress).padStart(3, '0')}
         </div>
       </div>
 
@@ -127,7 +149,7 @@ export default function LandingPage() {
           </div>
 
           <div className="reveal-el opacity-0 flex items-center gap-4 pt-6 border-t border-border-subtle max-w-md">
-            <div className="flex -space-x-3">
+            <div className="flex gap-2">
               {[Building2, Scale, FileText].map((Icon, i) => (
                 <div key={i} className="w-10 h-10 rounded-full border-[3px] border-background-light bg-surface-main flex items-center justify-center text-text-sub shadow-sm">
                   <Icon className="w-4 h-4" />
@@ -174,7 +196,7 @@ export default function LandingPage() {
               {/* Main content mockup */}
               <div className="flex-1 p-6 flex flex-col gap-4 bg-white">
                 <div className="h-6 w-1/3 bg-border-subtle rounded"></div>
-                
+
                 <div className="flex gap-4 flex-1">
                   {/* Left Column (Analysis) */}
                   <div className="w-1/2 flex flex-col gap-3">
@@ -190,7 +212,7 @@ export default function LandingPage() {
                       <div className="h-3 w-4/5 bg-border-subtle/50 rounded"></div>
                     </div>
                   </div>
-                  
+
                   {/* Right Column (Draft) */}
                   <div className="w-1/2 bg-surface-light border border-border-subtle rounded-xl p-4">
                     <div className="h-4 w-1/3 bg-primary/20 rounded mb-6"></div>
@@ -276,31 +298,31 @@ export default function LandingPage() {
             </p>
 
             <div className="space-y-8">
-               <div className="flex items-start gap-5">
-                  <div className="w-12 h-12 bg-surface-light border border-border-default rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
-                    <BarChart2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-text-heading mb-2">Data-Driven Strategy</h4>
-                    <p className="text-text-sub leading-relaxed">Evaluate the exact financial impact of a notice and receive clear, actionable defense strategies grounded in precedent.</p>
-                  </div>
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 bg-surface-light border border-border-default rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                  <BarChart2 className="w-5 h-5 text-primary" />
                 </div>
-                
-                <div className="flex items-start gap-5">
-                  <div className="w-12 h-12 bg-surface-light border border-border-default rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
-                    <Shield className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-text-heading mb-2">Absolute Data Privacy</h4>
-                    <p className="text-text-sub leading-relaxed">Your client data is encrypted and never used for training models. Maintain strict confidentiality with bank-grade security protocols.</p>
-                  </div>
+                <div>
+                  <h4 className="text-lg font-bold text-text-heading mb-2">Data-Driven Strategy</h4>
+                  <p className="text-text-sub leading-relaxed">Evaluate the exact financial impact of a notice and receive clear, actionable defense strategies grounded in precedent.</p>
                 </div>
+              </div>
+
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 bg-surface-light border border-border-default rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-text-heading mb-2">Absolute Data Privacy</h4>
+                  <p className="text-text-sub leading-relaxed">Your client data is encrypted and never used for training models. Maintain strict confidentiality with bank-grade security protocols.</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right: Feature cards */}
           <div className="order-1 lg:order-2 grid grid-cols-2 gap-5 relative">
-             {/* Decorative blob */}
+            {/* Decorative blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-secondary/10 rounded-full blur-[60px] -z-10" />
 
             {[
@@ -326,29 +348,29 @@ export default function LandingPage() {
       {/* ── PRICING CTA ── */}
       <section id="pricing" className="py-24 px-6 lg:px-12 bg-surface-main">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 bg-gradient-to-br from-primary via-primary-dark to-[#0a2a1f] rounded-3xl p-10 lg:p-16 overflow-hidden relative">
-           <div className="absolute inset-0 opacity-[0.05]" style={{
+          <div className="absolute inset-0 opacity-[0.05]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }} />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[80px]" />
 
           <div className="relative z-10 flex flex-col justify-center">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">Ready to modernize<br/>your practice?</h2>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">Ready to modernize<br />your practice?</h2>
             <p className="text-white/70 text-lg mb-8 max-w-md leading-relaxed">Join hundreds of Chartered Accountants saving 80% of their time on notice replies and legal research.</p>
             <ul className="space-y-4 mb-10 text-white/90">
-                {['Unlimited Notice Analysis', 'Comprehensive Legal Library Access', 'Bank-Grade Security', 'Export to PDF & Word'].map((f) => (
-                  <li key={f} className="flex items-center gap-3 font-medium">
-                     <div className="w-5 h-5 rounded-full bg-secondary/30 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-secondary" />
-                     </div>
-                     {f}
-                  </li>
-                ))}
-              </ul>
+              {['Unlimited Notice Analysis', 'Comprehensive Legal Library Access', 'Bank-Grade Security', 'Export to PDF & Word'].map((f) => (
+                <li key={f} className="flex items-center gap-3 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-secondary/30 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-secondary" />
+                  </div>
+                  {f}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="relative z-10 flex items-center justify-center lg:justify-end">
-             <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 border border-white/20">
+            <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 border border-white/20">
               <div className="inline-flex px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6">Professional Plan</div>
               <div className="flex items-baseline gap-1 mb-8">
                 <span className="text-5xl font-serif font-bold text-text-heading">₹4,999</span>
@@ -379,9 +401,9 @@ export default function LandingPage() {
             </div>
             <p className="text-text-sub text-sm leading-relaxed max-w-xs mb-6">The definitive intelligence platform for modern tax professionals and chartered accountants.</p>
             <div className="flex gap-3">
-               <a href="#" className="w-9 h-9 border border-border-default rounded-lg flex items-center justify-center text-text-light hover:text-text-heading hover:border-border-hover transition-colors">
-                 <Mail className="w-4 h-4" />
-               </a>
+              <a href="#" className="w-9 h-9 border border-border-default rounded-lg flex items-center justify-center text-text-light hover:text-text-heading hover:border-border-hover transition-colors">
+                <Mail className="w-4 h-4" />
+              </a>
             </div>
           </div>
 
@@ -419,7 +441,7 @@ export default function LandingPage() {
         <div className="max-w-[1400px] mx-auto border-t border-border-subtle pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-medium text-text-light">
           <p>© {new Date().getFullYear()} TaxCopilot Technologies. All rights reserved.</p>
           <div className="flex gap-6">
-             <span>Made with precision for CA workflows</span>
+            <span>Made with precision for CA workflows</span>
           </div>
         </div>
       </footer>
