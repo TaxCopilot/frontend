@@ -206,23 +206,11 @@ export default function ProfilePage() {
                                     <span className="text-xs md:text-sm font-medium text-text-sub whitespace-nowrap">Account role</span>
                                     <span className="text-sm md:text-base text-text-heading font-medium truncate w-full sm:w-auto sm:text-right">{user?.role || 'USER'}</span>
                                 </div>
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 md:p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300 gap-1 sm:gap-2 overflow-hidden w-full">
-                                    <span className="text-xs md:text-sm font-medium text-text-sub whitespace-nowrap">User ID</span>
-                                    <span className="text-[10px] md:text-xs font-mono text-text-light bg-background-light px-2 py-1 rounded-lg border border-border-subtle truncate max-w-full sm:w-auto sm:text-right inline-block w-full">{user?.id || '—'}</span>
-                                </div>
+
                             </div>
                         </div>
 
-                        {/* ── Danger Zone ── */}
-                        <div className="bg-red-50/50 border border-red-200 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 shadow-sm relative overflow-hidden text-center sm:text-left">
-                            <div className="relative z-10 w-full">
-                                <p className="text-sm font-semibold text-red-600 flex justify-center sm:justify-start items-center gap-1.5"><Trash2 className="w-4 h-4" /> Delete Account</p>
-                                <p className="text-[10px] md:text-xs text-red-400 mt-1 sm:mt-0.5">Permanently deletes your account, drafts, and documents.</p>
-                            </div>
-                            <button className="flex-shrink-0 w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 hover:border-red-400 transition-all shadow-sm relative z-10">
-                                Delete
-                            </button>
-                        </div>
+
 
                     </div>
                 </div>

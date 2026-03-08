@@ -93,22 +93,22 @@ export function Sidebar() {
         // Animate gap to 0 simultaneously with text fade so icon never jumps
         tl.to('.sidebar-nav-link', {
           columnGap: 0,
-          duration: 0.18,
+          duration: 0.12,
           ease: 'power2.in',
         }, 0);
         tl.to('.sidebar-text', {
           opacity: 0,
           maxWidth: 0,
-          duration: 0.18,
+          duration: 0.12,
           ease: 'power2.in',
         }, 0).to(
           sidebarRef.current,
           {
             width: isMobile ? 76 : 76,
-            duration: 0.28,
+            duration: 0.18,
             ease: 'power2.inOut',
           },
-          '-=0.05'
+          '-=0.03'
         );
       } else {
         // Layout already expanded (visualCollapsed=false set instantly in handleToggle)
@@ -116,22 +116,22 @@ export function Sidebar() {
         const tl = gsap.timeline();
         tl.to('.sidebar-nav-link', {
           columnGap: 12, // gap-3 is 12px
-          duration: 0.15,
+          duration: 0.1,
           ease: 'power2.out',
         }, 0);
         tl.to(sidebarRef.current, {
           width: 280,
-          duration: 0.25,
+          duration: 0.18,
           ease: 'power2.out',
         }, 0).to(
           '.sidebar-text',
           {
             opacity: 1,
             maxWidth: 300,
-            duration: 0.25,
+            duration: 0.18,
             ease: 'power2.out',
           },
-          '-=0.15'
+          '-=0.1'
         );
       }
     }, sidebarRef);
@@ -145,17 +145,17 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
-      className={`flex-shrink-0 flex flex-col z-50 top-0 overflow-hidden transition-all duration-300 ${
+      className={`flex-shrink-0 flex flex-col z-50 top-0 overflow-hidden transition-all duration-200 ${
         isMobile && collapsed
           ? 'absolute bg-transparent border-none pointer-events-none h-auto'
           : 'bg-[#F8F7F3] border-r border-[#e6e4dc] h-screen sticky relative pointer-events-auto max-md:absolute'
       }`}
       style={{ width: isMobile && collapsed ? 76 : 280 }}
     >
-      <div className={`bg-transparent pointer-events-auto transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
+      <div className={`bg-transparent pointer-events-auto transition-all duration-200 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
 
         {/* ── Dark Header ── */}
-        <div className={`flex items-center flex-shrink-0 transition-all duration-300 bg-primary ease-[cubic-bezier(0.87,0,0.13,1)] overflow-hidden ${vc ? 'w-[48px] h-[48px] justify-center rounded-[16px] px-0 mx-auto' : 'w-full h-[60px] justify-between rounded-2xl px-4'}`}>
+        <div className={`flex items-center flex-shrink-0 transition-all duration-200 bg-primary ease-[cubic-bezier(0.87,0,0.13,1)] overflow-hidden ${vc ? 'w-[48px] h-[48px] justify-center rounded-[16px] px-0 mx-auto' : 'w-full h-[60px] justify-between rounded-2xl px-4'}`}>
           {!vc && (
             <div className="flex items-center sidebar-text whitespace-nowrap overflow-hidden">
               <Link href="/" className="flex items-center gap-3 group min-w-0 pr-2">
