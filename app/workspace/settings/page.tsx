@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { Header } from '@/components/Header';
 import { Bell, BarChart2, Globe } from 'lucide-react';
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
@@ -46,19 +45,20 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-background-light">
-      <Header title="Settings" subtitle="Control how TaxCopilot behaves for your workflow." />
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-10 scrollbar-thin bg-[#FAF9F5]">
+        <div className="max-w-3xl mx-auto">
 
-      <div className="flex-1 overflow-y-auto px-8 lg:px-12 py-10 scrollbar-thin">
-        <div className="max-w-3xl mx-auto space-y-8 relative">
-          
-          {/* Decorative background glow */}
-          <div className="absolute right-0 top-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+          {/* Page Title */}
+          <div className="mb-8">
+            <h1 className="text-[28px] font-serif text-text-heading tracking-tight">Settings</h1>
+            <p className="text-text-sub mt-1">Control how TaxCopilot behaves for your workflow.</p>
+          </div>
 
           {/* TaxCopilot Preferences */}
           <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
-            
+
             <div className="relative z-10 mb-8">
               <h3 className="text-xl font-serif font-semibold text-text-heading mb-1.5">TaxCopilot Preferences</h3>
               <p className="text-sm text-text-sub max-w-lg">Control how your AI agent behaves across cases, and manage global visibility for your practice.</p>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Header } from '@/components/Header';
 import { RefreshCw, Trash2, FileText, Loader2, FolderOpen, Folder } from 'lucide-react';
 import { useDraftStore } from '@/stores/draftStore';
 import { caseService, Case } from '@/services/caseService';
@@ -89,16 +88,21 @@ export default function TrashPage() {
   const isLoading = tab === 'cases' ? caseTrashLoading : draftLoading;
 
   return (
-    <>
-      <Header title="Trash" subtitle="Restore or permanently delete items" />
-      <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 pt-8 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-10 scrollbar-thin bg-[#FAF9F5]">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 className="text-[28px] font-serif text-text-heading tracking-tight">Trash</h1>
+          <p className="text-text-sub mt-1">Restore or permanently delete items</p>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex rounded-xl border border-border-default overflow-hidden bg-surface-light">
             <button
               onClick={() => setTab('cases')}
-              className={`px-5 py-2.5 text-sm font-semibold flex items-center gap-2 transition-colors ${
-                tab === 'cases' ? 'bg-primary text-white' : 'text-text-sub hover:bg-background-light hover:text-text-heading'
-              }`}
+              className={`px-5 py-2.5 text-sm font-semibold flex items-center gap-2 transition-colors ${tab === 'cases' ? 'bg-primary text-white' : 'text-text-sub hover:bg-background-light hover:text-text-heading'
+                }`}
             >
               <Folder className="w-4 h-4" />
               Cases
@@ -110,9 +114,8 @@ export default function TrashPage() {
             </button>
             <button
               onClick={() => setTab('drafts')}
-              className={`px-5 py-2.5 text-sm font-semibold flex items-center gap-2 transition-colors ${
-                tab === 'drafts' ? 'bg-primary text-white' : 'text-text-sub hover:bg-background-light hover:text-text-heading'
-              }`}
+              className={`px-5 py-2.5 text-sm font-semibold flex items-center gap-2 transition-colors ${tab === 'drafts' ? 'bg-primary text-white' : 'text-text-sub hover:bg-background-light hover:text-text-heading'
+                }`}
             >
               <FileText className="w-4 h-4" />
               Drafts
@@ -245,7 +248,7 @@ export default function TrashPage() {
                     await caseService.permanentDelete(deleteCaseId);
                     setCaseTrash((prev) => prev.filter((c) => c.id !== deleteCaseId));
                     setDeleteCaseId(null);
-                  } catch(err) { console.error(err); }
+                  } catch (err) { console.error(err); }
                 }}
                 className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
               >
@@ -273,7 +276,7 @@ export default function TrashPage() {
                   try {
                     await permanentDeleteDraft(deleteDraftId);
                     setDeleteDraftId(null);
-                  } catch(err) { console.error(err); }
+                  } catch (err) { console.error(err); }
                 }}
                 className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
               >
@@ -283,6 +286,6 @@ export default function TrashPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
