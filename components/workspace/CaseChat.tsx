@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { 
-  Bot, Send, Loader2, MessageSquare, Sparkles 
+import {
+  Send, Loader2, MessageSquare, Scale
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -99,16 +99,15 @@ export function CaseChat({
           messages.map((msg) => (
             <div key={msg.id} className={`flex gap-4 max-w-3xl mx-auto w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 bg-white border border-border-default text-text-heading shadow-sm">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 bg-primary/10 border border-primary/20 text-primary shadow-sm">
+                  <Scale className="w-4 h-4" />
                 </div>
               )}
               <div className={`flex flex-col gap-1 min-w-0 ${msg.role === 'user' ? 'max-w-[85%]' : 'flex-1 pr-8'}`}>
-                <div className={`text-[15px] leading-relaxed text-text-heading ${
-                  msg.role === 'user'
+                <div className={`text-[15px] leading-relaxed text-text-heading ${msg.role === 'user'
                     ? 'bg-[#F0EEE7] px-5 py-3 rounded-[24px] rounded-tr-[8px]'
                     : 'pt-1.5'
-                }`}>
+                  }`}>
                   {renderMessageContent(msg.content)}
                 </div>
               </div>
@@ -119,8 +118,8 @@ export function CaseChat({
         {/* Typing indicator */}
         {sending && (
           <div className="flex gap-4 max-w-3xl">
-            <div className="w-9 h-9 rounded-xl bg-white border border-border-default flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Bot className="w-4 h-4 text-primary" />
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Scale className="w-4 h-4 text-primary" />
             </div>
             <div className="flex items-center gap-2 text-text-sub text-sm py-3 px-4 rounded-2xl bg-white border border-border-default shadow-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -161,11 +160,10 @@ export function CaseChat({
                     key={m.id}
                     type="button"
                     onClick={() => setChatMode(m.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 border ${
-                      active
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 border ${active
                         ? 'bg-primary text-white border-primary shadow-sm'
                         : 'text-text-sub border-border-default hover:border-primary/30 hover:text-primary hover:bg-primary/5'
-                    }`}
+                      }`}
                   >
                     <m.icon className="w-3.5 h-3.5" />
                     {m.label}

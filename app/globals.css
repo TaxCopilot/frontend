@@ -10,7 +10,7 @@
   --color-primary-dark: #000000;
   --color-primary-light: #525251;
 
-  /* ── Secondary: Warm Peach (kept for contrast highlights) ── */
+  /* ── Secondary: Warm Peach ── */
   --color-secondary: #f08c6e;
   --color-secondary-hover: #e87a5a;
   --color-secondary-soft: #fde8df;
@@ -54,19 +54,17 @@
   --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 0 0 1px rgba(45, 107, 94, 0.18), 0 8px 16px -4px rgba(45, 107, 94, 0.12);
   --shadow-float: 0 10px 30px -10px rgba(45, 107, 94, 0.3);
-
-  /* ── Fonts ── */
-  --font-sans: var(--font-sans);
-  --font-serif: var(--font-serif);
 }
 
 @layer base {
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     @apply font-sans;
   }
@@ -213,7 +211,6 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -236,9 +233,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -252,4 +247,13 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ── Brand overrides: these must come LAST to win over shadcn defaults ── */
+  --color-primary: #292928;
+  --color-primary-dark: #000000;
+  --color-primary-light: #525251;
+  --color-secondary: #f08c6e;
+  --color-secondary-hover: #e87a5a;
+  --color-secondary-soft: #fde8df;
+  --color-secondary-text: #7a2e0e;
 }
