@@ -30,37 +30,6 @@ function EditorPageInner() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<{ id: string; text: string; time: string }[]>([]);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const [panelWidth, setPanelWidth] = useState(320);
-
-  const sendMessage = () => {
-    const text = chatInput.trim();
-    if (!text) return;
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setChatMessages((prev) => [...prev, { id: Date.now().toString(), text, time }]);
-    setChatInput('');
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-  };
-
-  const startDrag = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-    const onMove = (mv: MouseEvent) => {
-      const delta = startX - mv.clientX;
-      const next = Math.min(520, Math.max(240, startWidth + delta));
-      setPanelWidth(next);
-    };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -221,15 +190,6 @@ function EditorPageInner() {
           lastSaved={lastSaved}
           handleSave={handleSave}
           exportPdf={exportPdf}
-        />
-        <EditorSidebar 
-          panelWidth={panelWidth}
-          startDrag={startDrag}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          setChatInput={setChatInput}
-          sendMessage={sendMessage}
-          chatEndRef={chatEndRef}
         />
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import {
@@ -26,9 +26,27 @@ export function Sidebar() {
   // `collapsed` drives GSAP; `visualCollapsed` drives CSS layout classes
   const [collapsed, setCollapsed] = useState(false);
   const [visualCollapsed, setVisualCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const logout = useAuthStore((s) => s.logout);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setCollapsed(true);
+        setVisualCollapsed(true);
+      } else {
+        setCollapsed(false);
+        setVisualCollapsed(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const navItems = [
     { name: 'Cases', href: '/workspace', icon: FileChartColumnIncreasing },
@@ -86,7 +104,7 @@ export function Sidebar() {
         }, 0).to(
           sidebarRef.current,
           {
-            width: 76,
+            width: isMobile ? 76 : 76,
             duration: 0.28,
             ease: 'power2.inOut',
           },
@@ -98,12 +116,12 @@ export function Sidebar() {
         const tl = gsap.timeline();
         tl.to('.sidebar-nav-link', {
           columnGap: 12, // gap-3 is 12px
-          duration: 0.25,
+          duration: 0.15,
           ease: 'power2.out',
         }, 0);
         tl.to(sidebarRef.current, {
           width: 280,
-          duration: 0.3,
+          duration: 0.25,
           ease: 'power2.out',
         }, 0).to(
           '.sidebar-text',
@@ -113,7 +131,7 @@ export function Sidebar() {
             duration: 0.25,
             ease: 'power2.out',
           },
-          '-=0.3'
+          '-=0.15'
         );
       }
     }, sidebarRef);
@@ -127,13 +145,17 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
-      className="flex-shrink-0 bg-[#F8F7F3] border-r border-[#e6e4dc] flex flex-col z-20 h-screen sticky top-0 relative overflow-hidden"
-      style={{ width: 280 }}
+      className={`flex-shrink-0 flex flex-col z-50 top-0 overflow-hidden transition-all duration-300 ${
+        isMobile && collapsed
+          ? 'absolute bg-transparent border-none pointer-events-none h-auto'
+          : 'bg-[#F8F7F3] border-r border-[#e6e4dc] h-screen sticky relative pointer-events-auto max-md:absolute'
+      }`}
+      style={{ width: isMobile && collapsed ? 76 : 280 }}
     >
-      <div className={`bg-transparent transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
+      <div className={`bg-transparent pointer-events-auto transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
 
         {/* ── Dark Header ── */}
-        <div className={`h-[60px] w-full bg-primary flex items-center flex-shrink-0 transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] overflow-hidden ${vc ? 'justify-center rounded-[20px] px-0' : 'justify-between rounded-2xl px-4'}`}>
+        <div className={`flex items-center flex-shrink-0 transition-all duration-300 bg-primary ease-[cubic-bezier(0.87,0,0.13,1)] overflow-hidden ${vc ? 'w-[48px] h-[48px] justify-center rounded-[16px] px-0 mx-auto' : 'w-full h-[60px] justify-between rounded-2xl px-4'}`}>
           {!vc && (
             <div className="flex items-center sidebar-text whitespace-nowrap overflow-hidden">
               <Link href="/" className="flex items-center gap-3 group min-w-0 pr-2">
@@ -145,14 +167,14 @@ export function Sidebar() {
           )}
           <button
             onClick={handleToggle}
-            className={`flex-shrink-0 rounded-lg flex items-center justify-center text-white/70 hover:bg-white/10 transition-colors ${vc ? 'w-10 h-10' : 'w-8 h-8'}`}
+            className={`flex-shrink-0 rounded-lg flex items-center justify-center text-white/70 hover:bg-white/10 transition-colors w-10 h-10`}
           >
-            <Menu className={vc ? 'w-6 h-6' : 'w-5 h-5'} />
+            <Menu className="w-5 h-5" />
           </button>
         </div>
 
         {/* ── Create Cards ── */}
-        <div className="pt-2 flex flex-col gap-2 relative">
+        <div className={`pt-2 flex flex-col gap-2 relative pointer-events-auto transition-opacity duration-300 ${isMobile && collapsed ? 'opacity-0' : 'opacity-100'}`}>
           <div className={`sidebar-text flex gap-3 overflow-hidden ${vc ? 'pointer-events-none' : ''}`}>
             <button
               onClick={() => setCreateModalOpen(true)}
@@ -177,7 +199,7 @@ export function Sidebar() {
       </div>
 
       {/* ── Navigation List ── */}
-      <div className={`flex-1 overflow-y-auto scrollbar-thin flex flex-col ${vc ? 'px-2' : 'px-3'} transition-all duration-300`}>
+      <div className={`flex-1 overflow-y-auto scrollbar-thin flex flex-col ${vc ? 'px-2' : 'px-3'} transition-all duration-300 pointer-events-auto ${isMobile && collapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className={`flex flex-col gap-1 bg-transparent border border-transparent transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'rounded-[24px] p-1.5' : 'rounded-2xl'}`}>
           {navItems.map((item, i) => {
             const active = isActive(item.href);
@@ -223,7 +245,7 @@ export function Sidebar() {
       </div>
 
       {/* ── Download Buttons Area ── */}
-      <div className={`flex flex-col gap-3 mt-auto flex-shrink-0 transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] ${vc ? 'px-3 pb-6 items-center' : 'p-4 overflow-hidden'}`}>
+      <div className={`flex flex-col gap-3 mt-auto flex-shrink-0 transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] pointer-events-auto ${vc ? 'px-3 pb-6 items-center' : 'p-4 overflow-hidden'} ${isMobile && collapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <button
           title={vc ? 'Android' : undefined}
           className={`w-full rounded-[20px] bg-[#ebd5fc] hover:bg-[#e4c2f9] transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] text-[#6b21a8] font-semibold text-[13px] flex items-center justify-center ${vc ? 'h-[52px] p-0 gap-0' : 'py-3 px-3 gap-2'} overflow-hidden whitespace-nowrap`}

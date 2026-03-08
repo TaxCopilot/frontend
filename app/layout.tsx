@@ -12,6 +12,9 @@ const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-montserrat
 export const metadata: Metadata = {
   title: 'TaxCopilot AI',
   description: 'Automated Tax Strategy & Legal Drafting',
+  icons: {
+    icon: '/image.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

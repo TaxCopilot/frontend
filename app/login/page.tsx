@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Scale, FileSearch, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,8 +77,8 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center font-serif font-bold text-white text-base shadow-lg">
-            T
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+            <Image src="/image.png" alt="Logo" width={32} height={32} className="w-full h-full object-cover" />
           </div>
           <span className="font-serif font-semibold text-[17px] text-white tracking-tight">TaxCopilot</span>
         </div>
@@ -127,7 +128,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[380px] relative z-10">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2.5 mb-8 justify-center">
-            <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-serif font-bold text-sm">T</div>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center overflow-hidden">
+              <Image src="/image.png" alt="Logo" width={28} height={28} className="w-full h-full object-cover" />
+            </div>
             <span className="font-serif font-semibold text-lg text-text-heading">TaxCopilot</span>
           </div>
 

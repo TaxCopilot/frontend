@@ -87,26 +87,25 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto px-6 lg:px-12 pb-28 py-10 scrollbar-thin bg-[#FAF9F5]">
-                <div className="max-w-3xl mx-auto">
-
+        <div className="flex flex-col h-full w-full">
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-12 pb-28 flex flex-col items-center py-6 md:py-10 scrollbar-thin bg-[#FAF9F5]">
+                <div className="max-w-3xl mx-auto w-full">
                     {/* Page Title */}
-                    <div className="mb-8">
-                        <h1 className="text-[28px] font-serif text-text-heading tracking-tight">Profile</h1>
-                        <p className="text-text-sub mt-1">Manage your personal information and account details.</p>
+                    <div className="mb-6 md:mb-8 text-center md:text-left">
+                        <h1 className="text-2xl md:text-[28px] font-serif text-text-heading tracking-tight">Profile</h1>
+                        <p className="text-text-sub mt-1 text-sm md:text-base">Manage your personal information and account details.</p>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full">
 
                         {/* ── Identity Card ── */}
-                        <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+                        <div className="bg-surface-light border border-border-subtle rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
 
-                            <div className="relative z-10 flex items-start justify-between flex-wrap gap-6">
-                                <div className="flex items-center gap-5">
+                            <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-6 text-center md:text-left">
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-5 w-full">
                                     {/* Avatar */}
-                                    <div className="relative group flex-shrink-0">
+                                    <div className="relative group flex-shrink-0 mx-auto md:mx-0">
                                         {avatarUrl ? (
                                             /* eslint-disable-next-line @next/next/no-img-element */
                                             <img src={avatarUrl} alt={user?.name || 'Avatar'} className="w-[72px] h-[72px] rounded-full object-cover border-2 border-border-default shadow" />
@@ -125,10 +124,10 @@ export default function ProfilePage() {
                                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                                     </div>
 
-                                    <div>
+                                    <div className="flex flex-col items-center md:items-start w-full">
                                         <h2 className="text-xl font-semibold text-text-heading">{user?.name || 'Your Name'}</h2>
                                         <p className="text-sm text-text-sub mt-0.5">{user?.email}</p>
-                                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                                        <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-2 w-full">
                                             <span className="text-[11px] text-text-light">Member since {memberYear}</span>
                                             {user?.role === 'ADMIN' && (
                                                 <span className="text-[11px] font-medium bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full">Admin</span>
@@ -138,31 +137,31 @@ export default function ProfilePage() {
                                 </div>
 
                                 {/* Activity stats */}
-                                <div className="flex gap-4 flex-shrink-0">
-                                    <div className="text-center">
-                                        <p className="text-2xl font-semibold text-text-heading">{activeDrafts}</p>
-                                        <p className="text-[11px] text-text-light mt-0.5 flex items-center gap-1"><ClipboardList className="w-3 h-3" /> Drafts</p>
+                                <div className="flex justify-center flex-row gap-4 flex-shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                                    <div className="text-center px-4 md:px-0">
+                                        <p className="text-xl md:text-2xl font-semibold text-text-heading">{activeDrafts}</p>
+                                        <p className="text-[10px] md:text-[11px] text-text-light mt-0.5 flex items-center justify-center gap-1"><ClipboardList className="w-3 h-3" /> Drafts</p>
                                     </div>
                                     <div className="w-px bg-border-subtle" />
-                                    <div className="text-center">
-                                        <p className="text-2xl font-semibold text-text-heading">{docCount ?? '—'}</p>
-                                        <p className="text-[11px] text-text-light mt-0.5 flex items-center gap-1"><FolderOpen className="w-3 h-3" /> Analysed</p>
+                                    <div className="text-center px-4 md:px-0">
+                                        <p className="text-xl md:text-2xl font-semibold text-text-heading">{docCount ?? '—'}</p>
+                                        <p className="text-[10px] md:text-[11px] text-text-light mt-0.5 flex items-center justify-center gap-1"><FolderOpen className="w-3 h-3" /> Analysed</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* ── Professional Information ── */}
-                        <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
-                            <h3 className="text-lg font-serif font-semibold text-text-heading mb-6 relative z-10">Professional Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 relative z-10">
+                        <div className="bg-surface-light border border-border-subtle rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
+                            <h3 className="text-base md:text-lg font-serif font-semibold text-text-heading mb-4 md:mb-6 relative z-10 text-center md:text-left">Professional Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 relative z-10">
                                 <Field label="Full Name" id="p-name">
                                     <input
                                         id="p-name"
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full px-4 py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                        className="w-full px-4 py-2.5 md:py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
                                     />
                                 </Field>
 
@@ -172,9 +171,9 @@ export default function ProfilePage() {
                                         type="email"
                                         value={user?.email || ''}
                                         disabled
-                                        className="w-full px-4 py-3 border border-border-default rounded-xl bg-background-light text-text-light text-sm cursor-not-allowed shadow-sm"
+                                        className="w-full px-4 py-2.5 md:py-3 border border-border-default rounded-xl bg-background-light text-text-light text-sm cursor-not-allowed shadow-sm"
                                     />
-                                    <p className="text-[11px] text-text-light mt-1">Cannot be changed</p>
+                                    <p className="text-[10px] md:text-[11px] text-text-light mt-1">Cannot be changed</p>
                                 </Field>
 
                                 <Field label="Phone Number" id="p-phone">
@@ -186,7 +185,7 @@ export default function ProfilePage() {
                                             placeholder="+91 98765 43210"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                            className="w-full pl-10 pr-4 py-2.5 md:py-3 border border-border-default rounded-xl bg-background-light text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
                                         />
                                     </div>
                                 </Field>
@@ -194,33 +193,33 @@ export default function ProfilePage() {
                         </div>
 
                         {/* ── Account Info ── */}
-                        <div className="bg-surface-light border border-border-subtle rounded-3xl p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden">
-                            <h3 className="text-lg font-serif font-semibold text-text-heading mb-6 relative z-10">Account Status</h3>
-                            <div className="space-y-2 relative z-10">
-                                <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
-                                    <span className="text-sm font-medium text-text-sub">Sign-in method</span>
-                                    <span className="text-text-heading font-medium">
+                        <div className="bg-surface-light border border-border-subtle rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden flex flex-col">
+                            <h3 className="text-base md:text-lg font-serif font-semibold text-text-heading mb-4 md:mb-6 relative z-10 text-center md:text-left">Account Status</h3>
+                            <div className="space-y-2 relative z-10 w-full overflow-hidden">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 md:p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300 gap-1 sm:gap-2 overflow-hidden w-full">
+                                    <span className="text-xs md:text-sm font-medium text-text-sub whitespace-nowrap">Sign-in method</span>
+                                    <span className="text-sm md:text-base text-text-heading font-medium truncate w-full sm:w-auto sm:text-right">
                                         {user?.provider === 'GOOGLE' ? '🔗 Google OAuth' : '📧 Email & Password'}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
-                                    <span className="text-sm font-medium text-text-sub">Account role</span>
-                                    <span className="text-text-heading font-medium">{user?.role || 'USER'}</span>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 md:p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300 gap-1 sm:gap-2 overflow-hidden w-full">
+                                    <span className="text-xs md:text-sm font-medium text-text-sub whitespace-nowrap">Account role</span>
+                                    <span className="text-sm md:text-base text-text-heading font-medium truncate w-full sm:w-auto sm:text-right">{user?.role || 'USER'}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300">
-                                    <span className="text-sm font-medium text-text-sub">User ID</span>
-                                    <span className="text-xs font-mono text-text-light bg-background-light px-2 py-1 rounded-lg border border-border-subtle">{user?.id || '—'}</span>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 md:p-4 rounded-xl border border-transparent hover:border-border-default hover:bg-background-light/50 transition-all duration-300 gap-1 sm:gap-2 overflow-hidden w-full">
+                                    <span className="text-xs md:text-sm font-medium text-text-sub whitespace-nowrap">User ID</span>
+                                    <span className="text-[10px] md:text-xs font-mono text-text-light bg-background-light px-2 py-1 rounded-lg border border-border-subtle truncate max-w-full sm:w-auto sm:text-right inline-block w-full">{user?.id || '—'}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* ── Danger Zone ── */}
-                        <div className="bg-red-50/50 border border-red-200 rounded-3xl p-8 flex items-center justify-between gap-6 shadow-sm relative overflow-hidden">
-                            <div className="relative z-10">
-                                <p className="text-sm font-semibold text-red-600 flex items-center gap-1.5"><Trash2 className="w-4 h-4" /> Delete Account</p>
-                                <p className="text-xs text-red-400 mt-0.5">Permanently deletes your account, all drafts, and uploaded documents.</p>
+                        <div className="bg-red-50/50 border border-red-200 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 shadow-sm relative overflow-hidden text-center sm:text-left">
+                            <div className="relative z-10 w-full">
+                                <p className="text-sm font-semibold text-red-600 flex justify-center sm:justify-start items-center gap-1.5"><Trash2 className="w-4 h-4" /> Delete Account</p>
+                                <p className="text-[10px] md:text-xs text-red-400 mt-1 sm:mt-0.5">Permanently deletes your account, drafts, and documents.</p>
                             </div>
-                            <button className="flex-shrink-0 px-6 py-2.5 text-sm font-bold text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 hover:border-red-400 transition-all shadow-sm relative z-10">
+                            <button className="flex-shrink-0 w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 hover:border-red-400 transition-all shadow-sm relative z-10">
                                 Delete
                             </button>
                         </div>
@@ -230,7 +229,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Sticky Save Bar ── */}
-            <div className="sticky bottom-0 bg-surface-light/80 backdrop-blur-md border-t border-border-subtle px-8 lg:px-12 py-5 flex items-center justify-end gap-4 z-20">
+            <div className="sticky bottom-0 bg-surface-light/80 backdrop-blur-md border-t border-border-subtle px-4 md:px-8 lg:px-12 py-4 md:py-5 flex items-center justify-center sm:justify-end gap-3 md:gap-4 z-20">
                 <button
                     onClick={() => { setName(user?.name || ''); setPhone(user?.phone || ''); }}
                     className="px-5 py-2.5 text-sm font-medium text-text-sub border border-border-default rounded-xl hover:bg-background-light transition-colors"

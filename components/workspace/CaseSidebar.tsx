@@ -22,6 +22,11 @@ interface CaseSidebarProps {
   setDraftMenuOpen: (id: string | null) => void;
   onRenameDraft: (id: string, title: string) => void;
   onDeleteDraft: (id: string) => void;
+  documentMenuOpen: string | null;
+  setDocumentMenuOpen: (id: string | null) => void;
+  onDeleteDocument: (id: string) => void;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (v: boolean) => void;
   router: any;
 }
 
@@ -35,6 +40,11 @@ export function CaseSidebar({
   setDraftMenuOpen,
   onRenameDraft,
   onDeleteDraft,
+  documentMenuOpen,
+  setDocumentMenuOpen,
+  onDeleteDocument,
+  isMobileSidebarOpen,
+  setIsMobileSidebarOpen,
   router
 }: CaseSidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,9 +53,25 @@ export function CaseSidebar({
 
   return (
     <>
-      <aside style={{ width: leftPanelWidth }} className="border-r border-border-default bg-sidebar-bg flex flex-col flex-shrink-0 z-10 relative">
+      <aside 
+        style={{ width: isMobileSidebarOpen ? '100%' : leftPanelWidth }} 
+        className={`border-r border-border-default bg-sidebar-bg flex flex-col h-full overflow-hidden flex-shrink-0 z-40 transition-transform duration-300 ${
+          isMobileSidebarOpen 
+            ? 'fixed inset-0 translate-x-0' 
+            : 'max-md:-translate-x-full max-md:fixed max-md:inset-y-0 max-md:left-0 relative'
+        }`}
+      >
+        {isMobileSidebarOpen && (
+          <button 
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="md:hidden absolute top-4 right-4 p-2 bg-background-light rounded-full shadow-sm z-50 text-text-sub"
+          >
+            ✕
+          </button>
+        )}
+
         {/* Case Header */}
-        <div className="p-5 border-b border-border-default bg-background-light">
+        <div className="p-5 border-b border-border-default bg-background-light pt-12 md:pt-5">
           <h2 className="text-base font-semibold text-text-heading line-clamp-2 leading-snug">
             {caseData.title}
           </h2>
@@ -80,7 +106,7 @@ export function CaseSidebar({
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               </button>
             </div>
-            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={onUpload} />
+            <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={onUpload} />
             <div className="space-y-1.5">
               {documents.length === 0 ? (
                 <div
@@ -94,13 +120,27 @@ export function CaseSidebar({
                 </div>
               ) : (
                 documents.map((doc) => (
-                  <div key={doc.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all cursor-default">
-                    <div className="w-8 h-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center flex-shrink-0">
-                      <FileStack className="w-4 h-4" />
+                  <div key={doc.id} className="group relative flex items-center justify-between w-full max-w-full overflow-hidden rounded-xl text-sm bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
+                    <div className="flex-[1_1_0%] flex items-center gap-3 px-3 py-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center flex-shrink-0">
+                        <FileStack className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className="text-sm font-medium text-text-heading block truncate group-hover:text-primary transition-colors">{doc.filename}</span>
+                        <span className="text-[10px] text-text-light uppercase tracking-wider mt-0.5 block truncate">Document</span>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-sm font-medium text-text-heading block truncate group-hover:text-primary transition-colors">{doc.filename}</span>
-                      <span className="text-[10px] text-text-light uppercase tracking-wider mt-0.5 block">Document</span>
+                    <div className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1 flex bg-white h-full items-center z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteDocument(doc.id);
+                        }}
+                        className="p-2 text-text-light hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Document"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -118,17 +158,17 @@ export function CaseSidebar({
                 </p>
               ) : (
                 drafts.map((d) => (
-                  <div key={d.id} className="group relative flex items-center justify-between w-full rounded-xl text-sm bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
+                  <div key={d.id} className="group relative flex items-center justify-between w-full max-w-full overflow-hidden rounded-xl text-sm bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
                     <button
                       onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
-                      className="flex-1 flex items-center gap-3 text-left px-3 py-2.5 min-w-0"
+                      className="flex-[1_1_0%] flex items-center gap-3 text-left px-3 py-2.5 min-w-0"
                     >
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/5 text-primary transition-colors">
                         <FileText className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1 pr-2">
                         <span className="text-sm font-medium text-text-heading block truncate text-primary transition-colors">{d.title}</span>
-                        <span className="text-[10px] text-text-light uppercase tracking-wider mt-0.5 block">Draft</span>
+                        <span className="text-[10px] text-text-light uppercase tracking-wider mt-0.5 block truncate">Draft</span>
                       </div>
                     </button>
                     <div className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1">

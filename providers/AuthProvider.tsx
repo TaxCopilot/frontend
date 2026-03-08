@@ -13,9 +13,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle Google OAuth callback token
   useEffect(() => {
     const token = searchParams.get('token');
-    if (token && pathname === '/login') {
+    if (token) {
       setToken(token).then(() => {
-        router.replace('/workspace');
+        // Remove token from URL to keep it clean
+        router.replace(pathname);
+        // Then redirect to workspace if they weren't already going somewhere specific
+        if (pathname === '/login' || pathname === '/') {
+          router.replace('/workspace');
+        }
       });
     }
   }, [searchParams, pathname, setToken, router]);

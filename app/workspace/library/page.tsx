@@ -80,7 +80,7 @@ export default function LibraryPage() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-10 scrollbar-thin bg-[#FAF9F5]">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-12 py-6 md:py-10 scrollbar-thin bg-[#FAF9F5]">
         <div className="max-w-5xl mx-auto">
           {!selectedCase ? (
             <div className="flex flex-col gap-6">

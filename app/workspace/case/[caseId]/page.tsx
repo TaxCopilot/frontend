@@ -73,6 +73,10 @@ export default function CaseChatPage() {
     }
   }, [caseId, fetchCase]);
 
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [documentMenuOpen, setDocumentMenuOpen] = useState<string | null>(null);
+  const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null);
+
   const startLeftDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
@@ -91,17 +95,20 @@ export default function CaseChatPage() {
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !caseId) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !caseId) return;
     setUploading(true);
     try {
-      await documentService.uploadForAnalysis(file, caseId);
+      for (let i = 0; i < files.length; i++) {
+        await documentService.uploadForAnalysis(files[i], caseId);
+      }
       await fetchCase();
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed. Please try again.');
     } finally {
       setUploading(false);
-      e.target.value = '';
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -183,7 +190,7 @@ export default function CaseChatPage() {
 
   return (
     <>
-      <div className="flex-1 flex overflow-hidden h-full bg-background-light">
+      <div className="flex-1 flex overflow-hidden h-full bg-background-light relative">
         <CaseSidebar 
           caseData={caseData}
           leftPanelWidth={leftPanelWidth}
@@ -197,22 +204,37 @@ export default function CaseChatPage() {
             setRenameInput(title);
           }}
           onDeleteDraft={(id) => setDeleteDraftId(id)}
+          documentMenuOpen={documentMenuOpen}
+          setDocumentMenuOpen={setDocumentMenuOpen}
+          onDeleteDocument={(id) => setDeleteDocumentId(id)}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+          setIsMobileSidebarOpen={setIsMobileSidebarOpen}
           router={router}
         />
 
-        <CaseChat 
-          messages={messages}
-          historyLoading={historyLoading}
-          sending={sending}
-          chatMode={chatMode}
-          setChatMode={setChatMode}
-          sendMessage={sendMessage}
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          chatEndRef={chatEndRef}
-          MODES={MODES}
-          renderMessageContent={renderMessageContent}
-        />
+        <div className="flex-[1_1_0%] flex flex-col min-w-0 min-h-0 relative h-full">
+          <CaseChat 
+            messages={messages}
+            historyLoading={historyLoading}
+            sending={sending}
+            chatMode={chatMode}
+            setChatMode={setChatMode}
+            sendMessage={sendMessage}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            chatEndRef={chatEndRef}
+            MODES={MODES}
+            renderMessageContent={renderMessageContent}
+          />
+          
+          <button 
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="md:hidden absolute bottom-24 right-4 p-3 bg-primary text-white rounded-full shadow-lg z-30 hover:bg-primary/90 transition-transform active:scale-95 flex items-center justify-center pointer-events-auto"
+            title="Open Case Documents"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {renameDraftId && (
@@ -270,6 +292,34 @@ export default function CaseChatPage() {
                     await draftService.trashDraft(deleteDraftId);
                     await fetchCase();
                     setDeleteDraftId(null);
+                  } catch(err) { console.error(err); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteDocumentId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-text-heading mb-2">Delete Document</h3>
+            <p className="text-sm text-text-sub mb-6">Are you sure you want to delete this document? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setDeleteDocumentId(null)} 
+                className="px-4 py-2 text-sm font-medium text-text-sub hover:bg-background-light rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await documentService.deleteAnalysisFile(deleteDocumentId);
+                    await fetchCase();
+                    setDeleteDocumentId(null);
                   } catch(err) { console.error(err); }
                 }}
                 className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-xl transition-colors"

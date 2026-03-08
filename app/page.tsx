@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuthStore } from '@/stores/authStore';
 import {
   ArrowRight, Play, Check, Shield,
@@ -93,8 +94,8 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="reveal-el opacity-0 flex items-center justify-between px-6 lg:px-12 py-5 max-w-[1400px] mx-auto border-b border-border-subtle/50 mb-8 lg:mb-16">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center font-serif font-bold text-white text-base shadow-sm">
-            T
+          <div className="w-8 h-8 flex items-center justify-center overflow-hidden rounded-lg">
+            <Image src="/image.png" alt="Logo" width={32} height={32} className="w-full h-full object-cover" />
           </div>
           <span className="text-xl font-serif font-bold tracking-tight text-text-heading">TaxCopilot</span>
         </div>
@@ -107,9 +108,6 @@ export default function LandingPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href={ctaHref} className="text-[15px] font-medium text-text-sub hover:text-primary transition-colors px-2">
-            Sign In
-          </Link>
           <Link href={ctaHref} className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-xl text-[15px] font-semibold transition-all shadow-sm">
             Get Started
           </Link>
@@ -187,7 +185,9 @@ export default function LandingPage() {
             <div className="flex h-[400px]">
               {/* Sidebar tiny mockup */}
               <div className="w-16 border-r border-border-subtle bg-surface-light flex flex-col items-center py-4 gap-4">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex justify-center items-center font-bold font-serif shadow-sm">T</div>
+                <div className="w-6 h-6 rounded flex justify-center items-center overflow-hidden">
+                  <Image src="/image.png" alt="Logo" width={24} height={24} className="w-full h-full object-cover" />
+                </div>
                 <div className="w-6 h-6 rounded bg-border-subtle mt-4"></div>
                 <div className="w-6 h-6 rounded bg-border-subtle/50"></div>
                 <div className="w-6 h-6 rounded bg-border-subtle/50"></div>
@@ -373,7 +373,7 @@ export default function LandingPage() {
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 border border-white/20">
               <div className="inline-flex px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6">Professional Plan</div>
               <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-5xl font-serif font-bold text-text-heading">₹4,999</span>
+                <span className="text-5xl font-serif font-bold text-text-heading">₹999</span>
                 <span className="text-text-sub font-medium">/month</span>
               </div>
               <Link
@@ -394,8 +394,8 @@ export default function LandingPage() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center font-serif font-bold text-white text-sm shadow">
-                T
+              <div className="w-6 h-6 flex items-center justify-center overflow-hidden rounded">
+                <Image src="/image.png" alt="Logo" width={24} height={24} className="w-full h-full object-cover" />
               </div>
               <span className="text-text-heading font-serif font-bold text-lg">TaxCopilot</span>
             </div>
