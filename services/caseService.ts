@@ -32,8 +32,10 @@ export interface CaseDraft {
   title: string;
   category: string;
   status: string;
+  content?: string;
   updatedAt: string;
 }
+
 
 export const caseService = {
   async list(): Promise<Case[]> {

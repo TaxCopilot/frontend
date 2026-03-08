@@ -82,7 +82,7 @@ export function Sidebar() {
   return (
     <aside
       className={`${collapsed ? 'w-[76px]' : 'w-[280px]'
-        } flex-shrink-0 bg-[#F8F7F3] border-r border-[#e6e4dc] flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative`}
+        } flex-shrink-0 bg-[#F8F7F3] border-r border-[#e6e4dc] flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative overflow-hidden`}
     >
 
       <div className={`bg-transparent transition-all duration-300 ${collapsed ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
@@ -108,12 +108,12 @@ export function Sidebar() {
         <div className={`pt-2 ${collapsed ? 'hidden' : 'flex'} gap-3`}>
           <button
             onClick={() => setCreateModalOpen(true)}
-            className="flex-1 flex flex-col justify-between items-start bg-white border border-dashed border-[#d1d5db] rounded-2xl p-4 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+            className="flex-1 flex flex-col justify-between items-start bg-white border border-dashed border-[#d1d5db] rounded-2xl p-4 hover:border-primary/50 hover:bg-primary/5 transition-all group overflow-hidden whitespace-nowrap"
           >
 
-            <div className="w-full flex items-center justify-between">
-              <span className="text-sm font-semibold text-text-heading">Create</span>
-              <Plus className="w-4 h-4 text-text-light" />
+            <div className="w-full flex items-center justify-between gap-2 overflow-hidden">
+              <span className="text-sm font-semibold text-text-heading truncate">Create</span>
+              <Plus className="w-4 h-4 text-text-light flex-shrink-0" />
             </div>
           </button>
         </div>
@@ -143,9 +143,9 @@ export function Sidebar() {
                   title={collapsed ? item.name : undefined}
                   className={`flex items-center gap-4 transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'} ${active ? 'bg-[#F9F8F4]' : 'hover:bg-[#F9F8F4]'} `}
                 >
-                  <item.icon className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} ${active ? 'text-primary' : 'text-text-sub group-hover:text-primary'} transition-all`} strokeWidth={active ? 2.5 : 2} />
+                  <item.icon className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} flex-shrink-0 ${active ? 'text-primary' : 'text-text-sub group-hover:text-primary'} transition-all`} strokeWidth={active ? 2.5 : 2} />
                   {!collapsed && (
-                    <span className={`text-[14px] font-medium leading-none ${active ? 'text-text-heading' : 'text-text-sub group-hover:text-text-heading'}`}>
+                    <span className={`text-[14px] font-medium leading-none whitespace-nowrap overflow-hidden transition-colors ${active ? 'text-text-heading' : 'text-text-sub group-hover:text-text-heading'}`}>
                       {item.name}
                     </span>
                   )}
@@ -165,9 +165,9 @@ export function Sidebar() {
               title={collapsed ? 'Logout' : undefined}
               className={`flex items-center gap-4 w-full border-none bg-transparent transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'}`}
             >
-              <LogOut className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} text-text-sub group-hover:text-red-500`} strokeWidth={2} />
+              <LogOut className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} flex-shrink-0 text-text-sub group-hover:text-red-500`} strokeWidth={2} />
               {!collapsed && (
-                <span className="text-[14px] font-medium leading-none text-text-sub group-hover:text-red-600">
+                <span className="text-[14px] font-medium leading-none text-text-sub group-hover:text-red-600 whitespace-nowrap overflow-hidden">
                   Logout
                 </span>
               )}
@@ -176,14 +176,14 @@ export function Sidebar() {
         </div>
       </div>
       {/* ── Download Buttons Area ── */}
-      <div className={`flex flex-col gap-3 mt-auto flex-shrink-0 transition-all duration-300 ${collapsed ? 'px-3 pb-6 items-center' : 'p-4'}`}>
-        <button title={collapsed ? "Android" : undefined} className={`w-full rounded-[20px] bg-[#ebd5fc] hover:bg-[#e4c2f9] transition-colors text-[#6b21a8] font-semibold text-[13px] flex items-center justify-center gap-2 ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
-          <Smartphone className={collapsed ? "w-5 h-5" : "w-4 h-4"} />
-          {!collapsed && 'Download Android app'}
+      <div className={`flex flex-col gap-3 mt-auto flex-shrink-0 transition-all duration-300 ${collapsed ? 'px-3 pb-6 items-center' : 'p-4 overflow-hidden'}`}>
+        <button title={collapsed ? "Android" : undefined} className={`w-full rounded-[20px] bg-[#ebd5fc] hover:bg-[#e4c2f9] transition-colors text-[#6b21a8] font-semibold text-[13px] flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
+          <Smartphone className={`flex-shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
+          {!collapsed && <span className="truncate">Download Android app</span>}
         </button>
-        <button title={collapsed ? "iOS" : undefined} className={`w-full rounded-[20px] bg-[#dcfce7] hover:bg-[#bbf7d0] transition-colors text-[#166534] font-semibold text-[13px] flex items-center justify-center gap-2 ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
-          <Apple className={collapsed ? "w-5 h-5" : "w-4 h-4"} />
-          {!collapsed && 'Download iOS app'}
+        <button title={collapsed ? "iOS" : undefined} className={`w-full rounded-[20px] bg-[#dcfce7] hover:bg-[#bbf7d0] transition-colors text-[#166534] font-semibold text-[13px] flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
+          <Apple className={`flex-shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
+          {!collapsed && <span className="truncate">Download iOS app</span>}
         </button>
       </div>
 
