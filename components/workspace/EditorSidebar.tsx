@@ -39,45 +39,56 @@ export function EditorSidebar({
 
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin">
           {chatMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-12">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-primary" />
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 mx-auto">
+                <Bot className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[12px] text-text-light leading-relaxed max-w-[180px]">
-                Ask the AI anything about your document
+              <h3 className="text-[14px] font-semibold text-text-heading mb-1">AI Writing Assistant</h3>
+              <p className="text-[12px] text-text-light leading-relaxed max-w-[200px] mx-auto">
+                Ask the AI anything about your document or request a draft.
               </p>
             </div>
           ) : (
-            chatMessages.map((msg) => (
-              <div key={msg.id} className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-text-light">{msg.time}</span>
-                  <span className="text-[11px] font-semibold text-text-sub">You</span>
+            <div className="space-y-6">
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex gap-3 ${msg.id.includes('assistant') ? 'justify-start' : 'justify-end'}`}>
+                  {msg.id.includes('assistant') && (
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 bg-white border border-border-default text-text-heading shadow-sm">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+                  <div className={`flex flex-col gap-1 min-w-0 ${msg.id.includes('assistant') ? 'flex-1' : 'max-w-[85%]'}`}>
+                    <div className={`text-[13px] leading-relaxed text-text-heading ${
+                      !msg.id.includes('assistant')
+                        ? 'bg-[#F0EEE7] px-4 py-2 rounded-[20px] rounded-tr-[4px]'
+                        : 'pt-1'
+                    }`}>
+                      {msg.text}
+                    </div>
+                    <span className="text-[10px] text-text-light mt-1 px-1">{msg.time}</span>
+                  </div>
                 </div>
-                <div className="bg-primary text-white text-[12.5px] leading-relaxed px-3.5 py-2 rounded-2xl rounded-tr-sm max-w-[90%] text-right">
-                  {msg.text}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
-        <div className="p-3 border-t border-border-subtle flex-shrink-0">
-          <div className="relative">
+        <div className="p-4 border-t border-border-subtle flex-shrink-0">
+          <div className="relative group shadow-sm rounded-xl overflow-hidden border border-border-default focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
             <input
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
               placeholder="Ask AI anything..."
-              className="w-full bg-background-light border border-border-default rounded-xl py-2.5 pl-3 pr-10 text-[12.5px] text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full bg-white py-3 pl-4 pr-12 text-[13px] text-text-main placeholder-text-light focus:outline-none"
             />
             <button
               onClick={sendMessage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary-dark transition-colors shadow-sm"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

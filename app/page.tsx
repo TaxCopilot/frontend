@@ -40,12 +40,11 @@ export default function LandingPage() {
   useGSAP(() => {
     const tl = gsap.timeline();
 
-    // 1. Initial logo pulse/scale
+    // 1. Initial logo fade in
     tl.fromTo('.preloader-logo',
-      { scale: 0.8, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.8, ease: 'back.out(1.5)' }
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, ease: 'power3.out' }
     )
-      .to('.preloader-logo', { scale: 1.1, duration: 0.4, ease: 'power2.inOut', yoyo: true, repeat: 1 })
       // 2. Preloader slides up and fades
       .to(preloaderRef.current, {
         yPercent: -100,
@@ -71,22 +70,18 @@ export default function LandingPage() {
         className="fixed inset-0 z-[100] bg-[#FAF9F5] flex flex-col items-center justify-center pointer-events-none"
       >
         {/* Logo */}
-        <div className="preloader-logo flex items-center gap-4">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center font-serif font-bold text-white text-3xl shadow-xl">
-            T
-          </div>
-          <span className="text-4xl font-serif font-bold tracking-tight text-text-heading">TaxCopilot</span>
+        <div className="preloader-logo flex items-center justify-center mb-4">
+          <span className="text-2xl font-bold text-text-heading tracking-[0.3em] uppercase" style={{ fontFamily: 'var(--font-montserrat)' }}>Loading...</span>
         </div>
 
         {/* Progress bar + counter */}
         <div className="mt-10 flex flex-col items-center gap-3 w-80">
-          <div className="w-full h-[3px] bg-border-default rounded-full overflow-hidden">
+          <div className="w-full h-[6px] bg-border-default rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-none"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm font-mono text-text-light tabular-nums">{progress}%</span>
         </div>
 
         {/* Bottom-right large counter */}
@@ -154,7 +149,7 @@ export default function LandingPage() {
           </div>
 
           <div className="reveal-el opacity-0 flex items-center gap-4 pt-6 border-t border-border-subtle max-w-md">
-            <div className="flex -space-x-3">
+            <div className="flex gap-2">
               {[Building2, Scale, FileText].map((Icon, i) => (
                 <div key={i} className="w-10 h-10 rounded-full border-[3px] border-background-light bg-surface-main flex items-center justify-center text-text-sub shadow-sm">
                   <Icon className="w-4 h-4" />

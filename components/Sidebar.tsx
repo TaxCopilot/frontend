@@ -96,11 +96,16 @@ export function Sidebar() {
         // Layout already expanded (visualCollapsed=false set instantly in handleToggle)
         // Just grow the sidebar and fade text back in simultaneously
         const tl = gsap.timeline();
+        tl.to('.sidebar-nav-link', {
+          columnGap: 12, // gap-3 is 12px
+          duration: 0.25,
+          ease: 'power2.out',
+        }, 0);
         tl.to(sidebarRef.current, {
           width: 280,
           duration: 0.3,
           ease: 'power2.out',
-        }).to(
+        }, 0).to(
           '.sidebar-text',
           {
             opacity: 1,
@@ -154,7 +159,7 @@ export function Sidebar() {
               className="flex-1 flex flex-col justify-between items-start bg-white border border-dashed border-[#d1d5db] rounded-2xl p-4 hover:border-primary/50 hover:bg-primary/5 transition-all group overflow-hidden whitespace-nowrap"
             >
               <div className="w-full flex items-center justify-between gap-2 overflow-hidden">
-                <span className="text-sm font-semibold text-text-heading truncate">Create</span>
+                <span className="text-sm font-semibold text-text-heading truncate">New Case</span>
                 <Plus className="w-4 h-4 text-text-light flex-shrink-0" />
               </div>
             </button>
