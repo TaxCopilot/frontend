@@ -4,30 +4,37 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import {
-  FolderOpen,
   Library,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
   LogOut,
   Trash2,
-  UserCircle,
-  ChevronUp,
+  ChevronRight,
+  Plus,
+  Compass,
+  Bot,
+  Apple,
+  Smartphone,
+  FileChartColumnIncreasing,
+  CircleUserRound
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { CreateCaseModal } from '@/components/CreateCaseModal';
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
   const navItems = [
-    { name: 'Cases', href: '/workspace', icon: FolderOpen },
+    { name: 'Cases', href: '/workspace', icon: FileChartColumnIncreasing },
     { name: 'Library', href: '/workspace/library', icon: Library },
+    { name: 'Profile', href: '/workspace/profile', icon: CircleUserRound },
+    { name: 'Settings', href: '/workspace/settings', icon: Settings },
     { name: 'Trash', href: '/workspace/trash', icon: Trash2 },
   ];
 
@@ -36,27 +43,7 @@ export function Sidebar() {
     return pathname.startsWith(href);
   };
 
-  // Close profile popover on outside click
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setProfileOpen(false);
-      }
-    };
-    if (profileOpen) document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [profileOpen]);
-
-  const avatarUrl = user?.avatarUrl
-    ? user.avatarUrl.startsWith('http')
-      ? user.avatarUrl
-      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.avatarUrl}`
-    : null;
-
-  const initials = user?.name
-    ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
-    : 'U';
-
+ 
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -94,149 +81,120 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${collapsed ? 'w-[68px]' : 'w-[220px]'
-        } flex-shrink-0 bg-sidebar-bg border-r border-border-default flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative`}
+      className={`${collapsed ? 'w-[76px]' : 'w-[280px]'
+        } flex-shrink-0 bg-[#F9F4F8] border-r border-[#f3f4f6] flex flex-col transition-all duration-300 z-20 h-screen sticky top-0 relative`}
     >
-      {/* Logo + Toggle Row */}
-      <div className={`h-[60px] flex items-center border-b border-border-default flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4'}`}>
-        <Link href="/" className="flex items-center gap-2.5 group flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center font-serif font-bold text-sm flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
-            T
-          </div>
-          {!collapsed && (
-            <span className="font-serif font-semibold text-[15px] tracking-tight text-text-heading truncate">
-              TaxCopilot
-            </span>
-          )}
-        </Link>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="flex-shrink-0 w-7 h-7 rounded-lg border border-border-default bg-surface-light flex items-center justify-center text-text-light hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
-        >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
-      </div>
 
-      {/* Scrollable Navigation */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin py-4 flex flex-col gap-6">
-        {/* ── MAIN MENU ── */}
-        <div className="px-3">
-          {!collapsed && (
-            <p className="px-2 mb-2 text-[10px] font-bold tracking-[0.14em] text-text-light uppercase select-none">
-              Main Menu
-            </p>
-          )}
-          <div className="flex flex-col gap-0.5">
-            {navItems.map((item) => (
-              <NavLink key={item.href} item={item} />
-            ))}
-          </div>
-        </div>
+      <div className={`bg-[#FCFBFE] transition-all duration-300 ${collapsed ? 'mx-2 my-4 p-1.5 rounded-[24px]' : 'p-2 m-3 rounded-2xl'}`}>
 
-        {/* Push to bottom container */}
-        <div className="mt-auto pt-4">
-          {/* Divider */}
-          {!collapsed && <div className="mx-4 mb-4 border-t border-border-subtle" />}
-
-          {/* ── Settings ── */}
-          <div className="px-3">
-            <Link
-              href="/workspace/settings"
-              title={collapsed ? 'Settings' : undefined}
-              className={`flex items-center gap-3 px-2 py-1.5 rounded-xl transition-all duration-150 group ${collapsed ? 'justify-center' : ''}`}
-            >
-              <span className={`flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 transition-all ${isSettingsActive
-                ? 'bg-primary/15 text-primary shadow-sm ring-1 ring-primary/20'
-                : 'text-text-sub group-hover:bg-aqua-light/70 group-hover:text-primary'
-              }`}>
-                <Settings className="w-[17px] h-[17px]" strokeWidth={isSettingsActive ? 2.2 : 1.8} />
-              </span>
-              {!collapsed && (
-                <span className={`text-[13px] font-medium leading-none transition-colors ${isSettingsActive ? 'text-primary' : 'text-text-sub group-hover:text-primary'}`}>
-                  Settings
-                </span>
-              )}
-              {isSettingsActive && !collapsed && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-              )}
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* ── User Profile Card (with popover) ── */}
-      <div className={`border-t border-border-default flex-shrink-0 ${collapsed ? 'p-2' : 'p-3'} relative`} ref={profileRef}>
-        {/* Profile Popover Panel */}
-        {profileOpen && (
-          <div className={`absolute bottom-full mb-2 ${collapsed ? 'left-full ml-2 bottom-0' : 'left-3 right-3'} bg-surface-light border border-border-default rounded-2xl shadow-xl py-2 z-50 overflow-hidden`}>
-            {/* User info header inside popover */}
+          {/* ── Dark Header ── */}
+          <div className={`${collapsed ? 'aspect-square justify-center rounded-[20px]' : 'h-[60px] px-4 justify-between rounded-2xl'} bg-[#235549] flex items-center flex-shrink-0 transition-all duration-300`}>
             {!collapsed && (
-              <div className="px-4 py-3 border-b border-border-subtle">
-                <p className="text-[13px] font-semibold text-text-heading truncate">{user?.name || 'User'}</p>
-                <p className="text-[11px] text-text-light truncate mt-0.5">{user?.email || ''}</p>
-              </div>
+              <Link href="/" className="flex items-center gap-3 group min-w-0">
+                <span className="font-semibold text-[17px] tracking-tight text-white/90 truncate">
+                  TaxCopilot
+                </span>
+              </Link>
             )}
-            <div className="py-1">
-              <Link
-                href="/workspace/profile"
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-[13px] text-text-sub hover:text-primary hover:bg-primary/5 transition-colors"
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className={`flex-shrink-0 ${collapsed ? 'w-full h-full' : 'w-8 h-8 ml-2'} rounded-lg flex items-center justify-center text-white/70 hover:bg-white/10 transition-colors`}
+            >
+              <Menu className={collapsed ? "w-6 h-6" : "w-5 h-5"} />
+            </button>
+          </div>
+
+          {/* ── Create Cards ── */}
+          <div className={`pt-2 ${collapsed ? 'hidden' : 'flex'} gap-3`}>
+            <button 
+              onClick={() => setCreateModalOpen(true)}
+              className="flex-1 flex flex-col justify-between items-start bg-white border border-dashed border-[#d1d5db] rounded-2xl p-4 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+            >
+              
+              <div className="w-full flex items-center justify-between">
+                <span className="text-sm font-semibold text-text-heading">Create</span>
+                <Plus className="w-4 h-4 text-text-light" />
+              </div>
+            </button>
+          </div>
+          
+          {collapsed && (
+            <div className="flex flex-col gap-2 pt-1.5">
+              <button 
+                onClick={() => setCreateModalOpen(true)}
+                className="flex items-center justify-center w-full aspect-square border-2 border-dashed border-[#d1d5db] rounded-[20px] text-text-sub hover:text-primary hover:bg-primary/5 transition-colors"
               >
-                <UserCircle className="w-4 h-4 flex-shrink-0" />
-                <span>View Profile</span>
-              </Link>
-              <Link
-                href="/workspace/settings"
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-[13px] text-text-sub hover:text-primary hover:bg-primary/5 transition-colors"
-              >
-                <Settings className="w-4 h-4 flex-shrink-0" />
-                <span>Settings</span>
-              </Link>
-              <div className="mx-3 my-1 border-t border-border-subtle" />
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
-                <span>Logout</span>
+                <Plus className="w-6 h-6 text-text-sub" />
               </button>
             </div>
-          </div>
-        )}
+          )}
+      </div>
 
-        {/* Trigger button */}
-        <button
-          onClick={() => setProfileOpen(!profileOpen)}
-          className={`flex items-center gap-2.5 group cursor-pointer rounded-xl p-2 transition-all hover:bg-primary/5 w-full ${collapsed ? 'justify-center' : ''} ${profileOpen ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`}
-        >
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={user?.name || 'User'}
-              className="w-8 h-8 rounded-full object-cover border border-border-default shadow-sm flex-shrink-0"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-primary/20">
-              {initials}
-            </div>
-          )}
-          {!collapsed && (
-            <>
-              <div className="overflow-hidden flex-1 min-w-0 text-left">
-                <p className="text-[12.5px] font-semibold text-text-heading truncate group-hover:text-primary transition-colors leading-tight">
-                  {user?.name || 'User'}
-                </p>
-                <p className="text-[11px] text-text-light truncate leading-tight mt-0.5">
-                  {user?.email || ''}
-                </p>
+
+      {/* ── Navigation List ── */}
+      <div className={`flex-1 overflow-y-auto scrollbar-thin flex flex-col ${collapsed ? 'px-2' : 'px-3'}`}>
+        <div className={`flex flex-col gap-1 bg-[#FCFBFE] border border-transparent transition-all duration-300 ${collapsed ? 'rounded-[24px] p-1.5' : 'rounded-2xl'}`}>
+          {navItems.map((item, i) => {
+            const active = isActive(item.href);
+            return (
+              <div key={item.href} className={`bg-[#FFFFFF] transition-all duration-300 ${collapsed ? 'rounded-[20px] mb-1.5 relative group' : 'm-1 rounded-2xl'}`}>
+                <Link
+                  href={item.href}
+                  title={collapsed ? item.name : undefined}
+                  className={`flex items-center gap-4 transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'}`}
+                >
+                  <item.icon className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} ${active ? 'text-primary' : 'text-text-sub group-hover:text-primary'} transition-all`} strokeWidth={active ? 2.5 : 2} />
+                  {!collapsed && (
+                    <span className={`text-[14px] font-medium leading-none ${active ? 'text-text-heading' : 'text-text-sub group-hover:text-text-heading'}`}>
+                      {item.name}
+                    </span>
+                  )}
+                </Link>
+                {/* Subtle divider */}
+                {i < navItems.length - 1 && !collapsed && (
+                  <div className="mx-4 border-b border-[#f3f4f6]" />
+                )}
               </div>
-              <ChevronUp className={`w-3.5 h-3.5 text-text-light flex-shrink-0 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
-            </>
-          )}
+            );
+          })}
+          
+          {!collapsed && <div className="mx-4 border-b border-[#f3f4f6]" />}
+          <div key="logout">
+            <button
+               onClick={handleLogout}
+               title={collapsed ? 'Logout' : undefined}
+               className={`flex items-center gap-4 w-full border-none bg-transparent transition-all group ${collapsed ? 'justify-center aspect-square' : 'px-3 py-3 rounded-xl'}`}
+            >
+              <LogOut className={`${collapsed ? 'w-[22px] h-[22px]' : 'w-[20px] h-[20px]'} text-text-sub group-hover:text-red-500`} strokeWidth={2} />
+              {!collapsed && (
+                <span className="text-[14px] font-medium leading-none text-text-sub group-hover:text-red-600">
+                  Logout
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* ── Download Buttons Area ── */}
+      <div className={`flex flex-col gap-3 mt-auto flex-shrink-0 transition-all duration-300 ${collapsed ? 'px-3 pb-6 items-center' : 'p-4'}`}>
+        <button title={collapsed ? "Android" : undefined} className={`w-full rounded-[20px] bg-[#ebd5fc] hover:bg-[#e4c2f9] transition-colors text-[#6b21a8] font-semibold text-[13px] flex items-center justify-center gap-2 ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
+          <Smartphone className={collapsed ? "w-5 h-5" : "w-4 h-4"} />
+          {!collapsed && 'Download Android app'}
+        </button>
+        <button title={collapsed ? "iOS" : undefined} className={`w-full rounded-[20px] bg-[#dcfce7] hover:bg-[#bbf7d0] transition-colors text-[#166534] font-semibold text-[13px] flex items-center justify-center gap-2 ${collapsed ? 'aspect-square p-0' : 'py-3'}`}>
+          <Apple className={collapsed ? "w-5 h-5" : "w-4 h-4"} />
+          {!collapsed && 'Download iOS app'}
         </button>
       </div>
+
+      <CreateCaseModal 
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={(caseId) => {
+          setCreateModalOpen(false);
+          router.push(`/workspace/case/${caseId}`);
+        }}
+      />
     </aside>
   );
 }

@@ -8,6 +8,7 @@ import { useCases } from '@/hooks/useCases';
 import { caseService, Case } from '@/services/caseService';
 import { useAuthStore } from '@/stores/authStore';
 import { PageSkeleton } from '@/components/SkeletonLoader';
+import { CreateCaseModal } from '@/components/CreateCaseModal';
 
 function timeAgo(dateString: string) {
   const d = new Date(dateString);
@@ -30,9 +31,6 @@ export default function WorkspacePage() {
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
@@ -41,21 +39,6 @@ export default function WorkspacePage() {
   useEffect(() => {
     fetchCases();
   }, [fetchCases]);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    setCreating(true);
-    try {
-      const c = await caseService.create({ title: title.trim(), description: description.trim() || undefined });
-      setShowCreateModal(false);
-      setTitle('');
-      setDescription('');
-      router.push(`/workspace/case/${c.id}`);
-    } finally {
-      setCreating(false);
-    }
-  };
 
   let filtered = cases.filter(
     (c) =>
@@ -198,44 +181,14 @@ export default function WorkspacePage() {
         </div>
       </div>
 
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => !creating && setShowCreateModal(false)}>
-          <div className="bg-surface-light rounded-2xl shadow-2xl border border-border-subtle w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-text-heading mb-4">Create Case</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-heading mb-1.5">Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. GST Notice – ABC Traders"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-heading mb-1.5">Description (optional)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Brief context..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-border-default rounded-xl bg-background-light text-text-main placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => !creating && setShowCreateModal(false)} className="flex-1 px-4 py-2.5 border border-border-default rounded-xl text-sm font-medium text-text-sub hover:bg-background-light">
-                  Cancel
-                </button>
-                <button type="submit" disabled={creating || !title.trim()} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark disabled:opacity-50 flex items-center justify-center gap-2">
-                  {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateCaseModal 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={(caseId) => {
+          setShowCreateModal(false);
+          router.push(`/workspace/case/${caseId}`);
+        }}
+      />
     </>
   );
 }
