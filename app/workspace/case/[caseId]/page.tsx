@@ -171,7 +171,7 @@ export default function CaseChatPage() {
     );
   };
 
-  if (isLoading || !caseData) {
+  if (isLoading && !caseData) {
     return (
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-background-light">
         <div className="p-8">

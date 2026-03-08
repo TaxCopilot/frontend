@@ -46,6 +46,11 @@ export function CaseChat({
     el.style.height = Math.min(el.scrollHeight, 192) + 'px';
   }, [inputValue]);
 
+  // Auto-scroll to bottom when messages change or typing begins
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, sending, chatEndRef]);
+
   const activeMode = MODES.find((m) => m.id === chatMode)!;
 
   const handleSend = () => {
