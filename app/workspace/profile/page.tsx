@@ -39,7 +39,7 @@ export default function ProfilePage() {
     useEffect(() => {
         fetchDrafts();
         documentService.listAnalysisFiles().then((files) => setDocCount(files.length)).catch(() => setDocCount(0));
-    }, []);
+    }, [fetchDrafts]);
 
     const avatarUrl = user?.avatarUrl
         ? (user.avatarUrl.startsWith('http')
@@ -106,6 +106,7 @@ export default function ProfilePage() {
                                 {/* Avatar */}
                                 <div className="relative group flex-shrink-0">
                                     {avatarUrl ? (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
                                         <img src={avatarUrl} alt={user?.name || 'Avatar'} className="w-[72px] h-[72px] rounded-full object-cover border-2 border-border-default shadow" />
                                     ) : (
                                         <div className="w-[72px] h-[72px] rounded-full bg-primary/15 text-primary flex items-center justify-center text-xl font-bold border-2 border-primary/20 shadow">

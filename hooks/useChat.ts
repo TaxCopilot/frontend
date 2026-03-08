@@ -267,7 +267,7 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     } finally {
       setAnalyzing(false);
     }
-  }, [docId]);
+  }, [docId, document]);
 
   const createStrategy = useCallback(async (accountDetails?: string) => {
     if (!docId) return;
@@ -305,7 +305,7 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     } finally {
       setAnalyzing(false);
     }
-  }, [docId]);
+  }, [docId, document]);
 
   const buildDraft = useCallback(async () => {
     if (!docId) return;
@@ -340,7 +340,7 @@ export function useChat({ document, docId }: UseChatOptions): UseChatResult {
     } finally {
       setAnalyzing(false);
     }
-  }, [docId]);
+  }, [docId, document]);
 
   return { messages, analyzing, chatLoading, historyLoading, error, runAnalysis, sendMessage, runDeepAnalysis, createStrategy, buildDraft };
 }
