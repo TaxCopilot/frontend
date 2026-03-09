@@ -158,7 +158,7 @@ export function CaseSidebar({
                 </p>
               ) : (
                 drafts.map((d) => (
-                  <div key={d.id} className="group relative flex items-center justify-between w-full max-w-full overflow-hidden rounded-xl text-sm bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
+                  <div key={d.id} className={`group relative flex items-center justify-between w-full max-w-full rounded-xl text-sm bg-white border border-border-default shadow-sm hover:border-primary/30 hover:shadow-md transition-all ${draftMenuOpen === d.id ? 'z-50' : 'z-10'}`}>
                     <button
                       onClick={() => router.push(`/workspace/editor?id=${d.id}`)}
                       className="flex-[1_1_0%] flex items-center gap-3 text-left px-3 py-2.5 min-w-0"
