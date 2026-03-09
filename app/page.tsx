@@ -141,9 +141,9 @@ export default function LandingPage() {
             >
               Start Free Trial <ArrowRight className="w-5 h-5" />
             </Link>
-            <button className="flex items-center justify-center gap-2 text-base font-semibold text-text-heading bg-white border border-border-default hover:border-border-hover px-8 py-4 rounded-xl transition-all shadow-sm w-full sm:w-auto">
+            <a href="https://youtu.be/bVA04cRus-o" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-base font-semibold text-text-heading bg-white border border-border-default hover:border-border-hover px-8 py-4 rounded-xl transition-all shadow-sm w-full sm:w-auto">
               <Play className="w-5 h-5 fill-text-heading" /> Watch Platform Demo
-            </button>
+            </a>
           </div>
 
           <div className="reveal-el opacity-0 flex items-center gap-4 pt-6 border-t border-border-subtle max-w-md">

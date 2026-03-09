@@ -261,18 +261,15 @@ export function EditorComponent({
         .tiptap-wrap .ProseMirror:focus { outline: none; }
         .tiptap-wrap .ProseMirror p { margin-bottom: 12px; line-height: 1.5; }
 
-        /* Headings — standard sizes */
-        .tiptap-wrap .ProseMirror h1,
-        .tiptap-wrap .ProseMirror h1 * { font-size: 28px !important; font-weight: 700 !important; line-height: 1.2 !important; color: #111827 !important; letter-spacing: -0.5px !important; }
-        .tiptap-wrap .ProseMirror h1 { margin-top: 24px !important; margin-bottom: 12px !important; }
+        /* Headings — standard sizes (children with inline font-size can override) */
+        .tiptap-wrap .ProseMirror h1 { font-size: 28px !important; font-weight: 700 !important; line-height: 1.2 !important; color: #111827 !important; letter-spacing: -0.5px !important; margin-top: 24px !important; margin-bottom: 12px !important; }
+        .tiptap-wrap .ProseMirror h1 * { font-weight: 700; line-height: 1.2; color: #111827; letter-spacing: -0.5px; }
 
-        .tiptap-wrap .ProseMirror h2,
-        .tiptap-wrap .ProseMirror h2 * { font-size: 24px !important; font-weight: 600 !important; line-height: 1.25 !important; color: #1f2937 !important; letter-spacing: -0.3px !important; }
-        .tiptap-wrap .ProseMirror h2 { margin-top: 20px !important; margin-bottom: 10px !important; }
+        .tiptap-wrap .ProseMirror h2 { font-size: 24px !important; font-weight: 600 !important; line-height: 1.25 !important; color: #1f2937 !important; letter-spacing: -0.3px !important; margin-top: 20px !important; margin-bottom: 10px !important; }
+        .tiptap-wrap .ProseMirror h2 * { font-weight: 600; line-height: 1.25; color: #1f2937; letter-spacing: -0.3px; }
 
-        .tiptap-wrap .ProseMirror h3,
-        .tiptap-wrap .ProseMirror h3 * { font-size: 20px !important; font-weight: 600 !important; line-height: 1.3 !important; color: #374151 !important; }
-        .tiptap-wrap .ProseMirror h3 { margin-top: 16px !important; margin-bottom: 8px !important; }
+        .tiptap-wrap .ProseMirror h3 { font-size: 20px !important; font-weight: 600 !important; line-height: 1.3 !important; color: #374151 !important; margin-top: 16px !important; margin-bottom: 8px !important; }
+        .tiptap-wrap .ProseMirror h3 * { font-weight: 600; line-height: 1.3; color: #374151; }
 
         /* Lists */
         .tiptap-wrap .ProseMirror ul { list-style-type: disc !important; padding-left: 1.6em !important; margin: 4px 0 10px !important; }
@@ -445,7 +442,7 @@ export function EditorComponent({
         </div>
 
         {/* Editor content area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full scrollbar-thin bg-[#FAF9F5] pt-8 pb-32 tiptap-wrap relative" style={{ overflowX: 'hidden' }}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full scrollbar-thin bg-[#FAF9F5] pt-8 pb-32 tiptap-wrap relative" style={{ overflowX: 'hidden', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
           <div 
             className="origin-top transition-transform flex justify-center mx-auto"
             style={{ 

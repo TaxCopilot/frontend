@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useDraftStore } from '@/stores/draftStore';
 import { authService } from '@/services/authService';
+import { caseService } from '@/services/caseService';
 import { documentService } from '@/services/documentService';
 import {
     Camera, Save, Phone,
     Loader2, Check,
-    Trash2, FolderOpen, ClipboardList,
+    Trash2, FolderOpen, ClipboardList, Briefcase,
 } from 'lucide-react';
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
@@ -34,10 +35,12 @@ export default function ProfilePage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [docCount, setDocCount] = useState<number | null>(null);
+    const [caseCount, setCaseCount] = useState<number | null>(null);
 
     useEffect(() => {
         fetchDrafts();
         documentService.listAnalysisFiles().then((files) => setDocCount(files.length)).catch(() => setDocCount(0));
+        caseService.list().then((cases) => setCaseCount(cases.length)).catch(() => setCaseCount(0));
     }, [fetchDrafts]);
 
     const avatarUrl = user?.avatarUrl
@@ -145,7 +148,12 @@ export default function ProfilePage() {
                                     <div className="w-px bg-border-subtle" />
                                     <div className="text-center px-4 md:px-0">
                                         <p className="text-xl md:text-2xl font-semibold text-text-heading">{docCount ?? '—'}</p>
-                                        <p className="text-[10px] md:text-[11px] text-text-light mt-0.5 flex items-center justify-center gap-1"><FolderOpen className="w-3 h-3" /> Analysed</p>
+                                        <p className="text-[10px] md:text-[11px] text-text-light mt-0.5 flex items-center justify-center gap-1"><FolderOpen className="w-3 h-3" /> Uploaded</p>
+                                    </div>
+                                    <div className="w-px bg-border-subtle" />
+                                    <div className="text-center px-4 md:px-0">
+                                        <p className="text-xl md:text-2xl font-semibold text-text-heading">{caseCount ?? '—'}</p>
+                                        <p className="text-[10px] md:text-[11px] text-text-light mt-0.5 flex items-center justify-center gap-1"><Briefcase className="w-3 h-3" /> Cases</p>
                                     </div>
                                 </div>
                             </div>
